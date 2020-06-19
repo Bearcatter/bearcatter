@@ -80,6 +80,10 @@ func startWSServer(host string, port int, ctrl *ScannerCtrl) (*http.Server, erro
 							return
 						}
 
+						if string(msgFromHost) == "" || string(msgFromHost) == "\n" {
+							continue
+						}
+
 						log.Infof("Message From Host: [%s]", crlfStrip(msgFromHost, LF))
 						ctrl.SendToHostMsgChannel(msgFromHost)
 					}
