@@ -167,6 +167,10 @@ func IsValidXMLMessage(msgType string, buffer []byte) bool {
 		}
 	}
 
+	if len(buffer) < 11 {
+		return false
+	}
+
 	clean := buffer[11:]
 
 	return xml.Unmarshal(clean, &msg) == nil
