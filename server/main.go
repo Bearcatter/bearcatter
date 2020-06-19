@@ -403,6 +403,9 @@ func main() {
 				log.Infoln("KEY", string(buffer[4:]))
 				ctrl.SendToRadioMsgChannel([]byte("KEY," + string(buffer[4:])))
 
+			case "ERR":
+				log.Errorln("Scanner threw an error!")
+
 			default:
 				log.Infoln("Unhandled Key", msgType)
 			}
