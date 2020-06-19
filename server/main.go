@@ -391,10 +391,9 @@ func main() {
 					if decodeErr := xml.Unmarshal(buffer[11:], &si); decodeErr != nil {
 						log.Errorln("Failed to decode XML", decodeErr)
 					} else {
-						log.Infof("%s: System: %s, Department: %s, Site: %s, Freq: [%s] Mon: [%s]",
-							buffer[:3], si.System.Name, si.Department.Name, si.Site.Name, si.SiteFrequency.Freq, si.MonitorList.Name)
-						log.Infof("\tMode: %s", si.Mode)
-						ctrl.SendToRadioMsgChannel([]byte("GSI," + string(buffer[11:])))
+						log.Infof("GSI: System: %s, Department: %s, Site: %s, Freq: [%s] Mon: [%s] Mode: [%s]",
+							si.System.Name, si.Department.Name, si.Site.Name, si.SiteFrequency.Freq, si.MonitorList.Name, si.Mode)
+						ctrl.SendToRadioMsgChannel([]byte("PSI," + string(buffer[11:])))
 					}
 				default:
 					log.Infoln("PSI: Invalid Mode::", string(buffer[4:]))
