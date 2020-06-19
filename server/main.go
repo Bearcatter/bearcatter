@@ -7,7 +7,6 @@ import (
 	"flag"
 	"net"
 	"os/signal"
-	"regexp"
 
 	"os"
 	"time"
@@ -87,7 +86,6 @@ const (
 var (
 	validKeys = loadValidKeys()
 	TERMINATE = "quit\r"
-	cmdRe     = regexp.MustCompile(`([^,;]+),([^,;]+)(,(.+))?`)
 )
 
 func main() {
@@ -211,8 +209,7 @@ func main() {
 				xmlMessage = make([]byte, 0)
 			}
 
-			match := cmdRe.FindStringSubmatch(string(buffer))
-			msgType := match[1]
+			msgType := string(buffer[:3])
 
 			ctrl.locker.pktRecv++
 			switch msgType {
