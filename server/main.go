@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/xml"
 	"flag"
 	"net"
 	"os/signal"
+	"regexp"
 
 	"os"
 	"time"
@@ -85,6 +87,7 @@ const (
 var (
 	validKeys = loadValidKeys()
 	TERMINATE = "quit\r"
+	cmdRe     = regexp.MustCompile(`([^,;]+),([^,;]+)(,(.+))?`)
 )
 
 func main() {
@@ -151,10 +154,13 @@ func main() {
 	go func(ctrl *ScannerCtrl) {
 		var do_quit bool = false
 
-		for {
+		xmlMessage := make([]byte, 0)
+		isXML := false
+		var xmlMessageType string
 
-			buffer := make([]byte, 65535)
+		for {
 			// ctrl.conn.SetReadDeadline(time.Now().Add(1 * time.Second))
+			buffer := make([]byte, 16384)
 			n, readErr := ctrl.conn.Read(buffer)
 			if readErr != nil {
 				log.Errorln("Error on read!", readErr)
@@ -175,13 +181,41 @@ func main() {
 						// TODO - no ping! ctrl.SendToRadioMsgChannel([]byte("ping"))
 					}
 				}
-
 			}
 
-			buffer = []byte(crlfStrip(buffer, LF|NL))
+			if ctrl.conn.Type == ConnTypeNetwork {
+				buffer = []byte(crlfStrip(buffer, LF|NL))
+			}
+
+			if bytes.Equal(buffer[4:9], []byte(`<XML>`)) {
+				xmlMessageType = string(buffer[0:3])
+				xmlMessage = append(xmlMessage, buffer[0:n]...)
+				if IsValidXMLMessage(xmlMessageType, xmlMessage) == false {
+					isXML = true
+					continue
+				}
+				buffer = xmlMessage
+				isXML = false
+				xmlMessageType = ""
+				xmlMessage = make([]byte, 0)
+			}
+
+			if isXML {
+				xmlMessage = append(xmlMessage, buffer[0:n]...)
+				if IsValidXMLMessage(xmlMessageType, xmlMessage) == false {
+					continue
+				}
+				buffer = xmlMessage
+				isXML = false
+				xmlMessageType = ""
+				xmlMessage = make([]byte, 0)
+			}
+
+			match := cmdRe.FindStringSubmatch(string(buffer))
+			msgType := match[1]
 
 			ctrl.locker.pktRecv++
-			switch string(buffer[:3]) {
+			switch msgType {
 			case "APR":
 				log.Infoln("APR", string(buffer[4:]))
 			case "AST":
@@ -345,9 +379,8 @@ func main() {
 				if decodeErr := xml.Unmarshal(buffer[11:], &si); decodeErr != nil {
 					log.Errorln("Failed to decode XML", decodeErr)
 				} else {
-					log.Infof("GSI: System: %s, Department: %s, Site: %s, Freq: [%s] Mon: [%s]",
-						si.System.Name, si.Department.Name, si.Site.Name, si.SiteFrequency.Freq, si.MonitorList.Name)
-					log.Infof("\tMode: %s", si.Mode)
+					log.Infof("GSI: System: %s, Department: %s, Site: %s, Freq: [%s] Mon: [%s] Mode: [%s]",
+						si.System.Name, si.Department.Name, si.Site.Name, si.SiteFrequency.Freq, si.MonitorList.Name, si.Mode)
 					ctrl.SendToRadioMsgChannel([]byte("GSI," + string(buffer[11:])))
 				}
 			case "PSI":
@@ -375,7 +408,7 @@ func main() {
 				ctrl.SendToRadioMsgChannel([]byte("KEY," + string(buffer[4:])))
 
 			default:
-				log.Infoln("Unhandled Key", string(buffer[:3]))
+				log.Infoln("Unhandled Key", msgType)
 			}
 
 			select {

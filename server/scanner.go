@@ -117,7 +117,7 @@ func (c *ScannerCtrl) drain() {
 		return
 	}
 
-	buffer := make([]byte, 65535)
+	buffer := make([]byte, 8192)
 	for {
 		// c.conn.SetReadDeadline(time.Now().Add(1 * time.Second))
 		_, err := c.conn.Read(buffer)

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/xml"
 	"strings"
 	"unicode"
 
@@ -128,4 +129,45 @@ func crlfStrip(msg []byte, flags uint) string {
 	}
 	r := strings.NewReplacer(replacer...)
 	return r.Replace(string(msg))
+}
+
+func IsValidXMLMessage(msgType string, buffer []byte) bool {
+	var msg interface{}
+	switch msgType {
+	case "GSI", "PSI":
+		msg = ScannerInfo{}
+		break
+	case "MSI":
+		msg = MsiInfo{}
+		break
+	case "STS":
+	case "GLG":
+	case "GLT":
+		switch getXmlGLTFormatType(buffer) {
+		case GltXmlFL:
+			msg = GltFLInfo{}
+		case GltXmlSYS:
+			msg = GltSysInfo{}
+		case GltXmlDEPT:
+			msg = GltDeptInfo{}
+		case GltXmlSITE:
+			msg = GltSiteInfo{}
+		case GltXmlFTO:
+			msg = GltFto{}
+		case GltXmlCSBANK:
+			msg = GltCSBank{}
+		case GltXmlTRN_DISCOV:
+			msg = GltTrnDiscovery{}
+		case GltXmlCNV_DISCOV:
+			msg = GltCnvDiscovery{}
+		case GltXmlUREC_FOLDER:
+			msg = GltUrecFolder{}
+		default:
+			log.Warnln("Unhandled GltXml Type", buffer)
+		}
+	}
+
+	clean := buffer[11:]
+
+	return xml.Unmarshal(clean, &msg) == nil
 }

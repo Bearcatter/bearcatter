@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"net"
 	"strings"
@@ -24,6 +25,7 @@ type ScannerConn struct {
 	usbPort   string
 	usbConfig *serial.Config
 	usbConn   *serial.Port
+	usbReader *bufio.Reader
 }
 
 func NewUDPConn(hostname string, port int) (*ScannerConn, error) {
@@ -54,6 +56,7 @@ func (c *ScannerConn) Open() error {
 		c.udpConn, connErr = net.DialUDP("udp", nil, c.udpAddress)
 	} else if c.Type == ConnTypeUSB {
 		c.usbConn, connErr = serial.OpenPort(c.usbConfig)
+		c.usbReader = bufio.NewReader(c.usbConn)
 	}
 	return connErr
 }
@@ -81,7 +84,7 @@ func (c ScannerConn) Read(b []byte) (n int, err error) {
 	if c.Type == ConnTypeNetwork {
 		return c.udpConn.Read(b)
 	} else if c.Type == ConnTypeUSB {
-		return c.usbConn.Read(b)
+		return c.usbReader.Read(b)
 	}
 	return 0, nil
 }
