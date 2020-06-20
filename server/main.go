@@ -258,6 +258,11 @@ func main() {
 				log.Infoln("URC:", string(buffer[4:]))
 				ctrl.SendToRadioMsgChannel([]byte("URC," + string(buffer[4:])))
 			case "STS":
+				log.Infoln("STS", string(buffer[4:]))
+				stsInfo := NewScannerStatus(string(buffer[4:]))
+				log.Infof("STS: Line 1: %s, Line 2: %s, Line 3: %s, Line 4: %s, SQL: %t, Signal Level: %d\n",
+					stsInfo.Line1, stsInfo.Line2, stsInfo.Line3, stsInfo.Line4, stsInfo.Squelch, stsInfo.SignalLevel)
+				ctrl.SendToRadioMsgChannel([]byte("STS," + string(buffer[4:])))
 			case "GLG":
 			case "GLT":
 				switch getXmlGLTFormatType(buffer[11:]) {

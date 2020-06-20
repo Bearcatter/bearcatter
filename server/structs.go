@@ -1,6 +1,10 @@
 package main
 
-import "encoding/xml"
+import (
+	"encoding/xml"
+	"strconv"
+	"strings"
+)
 
 type ScannerInfo struct {
 	XMLName     xml.Name `xml:"ScannerInfo"`
@@ -328,4 +332,116 @@ type MsiInfo struct {
 		No   string `xml:"No,attr"`
 		EOT  string `xml:"EOT,attr"`
 	} `xml:"Footer"`
+}
+
+type ScannerStatus struct {
+	// Best guesses based on
+	// https://github.com/suidroot/pyUniden/blob/e7705be191474ffada8af12bf1f09c0d4a65057d/pyuniden/main.py#L84-L122
+	// http://www.servicedocs.com/ARTIKELEN/7200250170003.pdf
+	// http://www.netfiles.ru/share/linked/f1/BCD396T_Protocol.pdf
+	Line1          string
+	Line2          string
+	Line3          string
+	Line4          string
+	Line5          string
+	Line6          string
+	Line7          string
+	Line8          string
+	Line9          string
+	Line10         string
+	Line11         string
+	Line12         string
+	Line13         string
+	Line14         string
+	Line15         string
+	Line16         string
+	Line17         string
+	Line18         string
+	Line19         string
+	Line20         string
+	Frequency      float64
+	Squelch        bool
+	Mute           bool
+	WeatherAlerts  bool
+	CCLed          bool
+	AlertLED       bool
+	BacklightLevel int
+	SignalLevel    int
+}
+
+func (s *ScannerStatus) Command() string {
+	return "STS"
+}
+
+func NewScannerStatus(raw string) *ScannerStatus {
+	lines := strings.Split(raw, ",")
+
+	resp := ScannerStatus{}
+
+	if len(lines) >= 2 {
+		resp.Line1 = lines[1]
+	}
+	if len(lines) >= 4 {
+		resp.Line2 = lines[3]
+	}
+	if len(lines) >= 6 {
+		resp.Line3 = lines[5]
+	}
+	if len(lines) >= 8 {
+		resp.Line4 = lines[7]
+	}
+	if len(lines) >= 10 {
+		resp.Line5 = lines[9]
+	}
+	if len(lines) >= 12 {
+		resp.Line6 = lines[11]
+	}
+	if len(lines) >= 14 {
+		resp.Line7 = lines[13]
+	}
+	if len(lines) >= 16 {
+		resp.Line8 = lines[15]
+	}
+	if len(lines) >= 18 {
+		resp.Line9 = lines[17]
+	}
+	if len(lines) >= 20 {
+		resp.Line10 = lines[19]
+	}
+	if len(lines) >= 22 {
+		resp.Line11 = lines[21]
+	}
+	if len(lines) >= 24 {
+		resp.Line12 = lines[23]
+	}
+	if len(lines) >= 26 {
+		resp.Line13 = lines[25]
+	}
+	if len(lines) >= 28 {
+		resp.Line14 = lines[27]
+	}
+	if len(lines) >= 30 {
+		resp.Line15 = lines[29]
+	}
+	if len(lines) >= 32 {
+		resp.Line16 = lines[31]
+	}
+	if len(lines) >= 34 {
+		resp.Line17 = lines[33]
+	}
+	if len(lines) >= 36 {
+		resp.Line18 = lines[35]
+	}
+	if len(lines) >= 38 {
+		resp.Line19 = lines[37]
+	}
+	if len(lines) >= 40 {
+		resp.Line20 = lines[39]
+	}
+
+	resp.Squelch = (lines[36] == "0")
+	resp.SignalLevel, _ = strconv.Atoi(lines[41])
+	resp.BacklightLevel, _ = strconv.Atoi(lines[43])
+
+	return &resp
 }
