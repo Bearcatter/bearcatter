@@ -463,3 +463,21 @@ func NewDateTimeInfo(raw string) *DateTimeInfo {
 		RTCOK:           rtc,
 	}
 }
+
+type LocationInfo struct {
+	Latitude  float64
+	Longitude float64
+	Range     float64
+}
+
+func NewLocationInfo(raw string) *LocationInfo {
+	split := strings.Split(raw, ",")
+	lat, _ := strconv.ParseFloat(split[0], 10)
+	lon, _ := strconv.ParseFloat(split[1], 10)
+	ran, _ := strconv.ParseFloat(split[2], 10)
+	return &LocationInfo{
+		Latitude:  lat,
+		Longitude: lon,
+		Range:     ran,
+	}
+}

@@ -255,6 +255,8 @@ func main() {
 				ctrl.SendToRadioMsgChannel([]byte("DTM," + string(buffer[4:])))
 			case "LCR":
 				log.Infoln("LCR:", string(buffer[4:]))
+				locInfo := NewLocationInfo(string(buffer[4:n]))
+				log.Infof("LCR: Latitude: %f, Longitude: %f, Range: %f\n", locInfo.Latitude, locInfo.Longitude, locInfo.Range)
 				ctrl.SendToRadioMsgChannel([]byte("LCR," + string(buffer[4:])))
 			case "URC":
 				log.Infoln("URC:", string(buffer[4:]))
