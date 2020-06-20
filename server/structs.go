@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/xml"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -447,14 +448,20 @@ func NewScannerStatus(raw string) *ScannerStatus {
 	return &resp
 }
 
+const DateTimeFormat = "2006,1,2,15,4,5"
+
 type DateTimeInfo struct {
 	DaylightSavings bool
 	Time            *time.Time
 	RTCOK           bool
 }
 
+func (d *DateTimeInfo) String() string {
+	return fmt.Sprintf("%d,%s,%d", d.DaylightSavings, d.Time.Format(DateTimeFormat), d.RTCOK)
+}
+
 func NewDateTimeInfo(raw string) *DateTimeInfo {
-	parsedTime, _ := time.Parse("2006,1,2,15,4,5", raw[2:len(raw)-2])
+	parsedTime, _ := time.Parse(DateTimeFormat, raw[2:len(raw)-2])
 	dst, _ := strconv.ParseBool(raw[0:1])
 	rtc, _ := strconv.ParseBool(raw[len(raw)-1:])
 	return &DateTimeInfo{
@@ -468,6 +475,10 @@ type LocationInfo struct {
 	Latitude  float64
 	Longitude float64
 	Range     float64
+}
+
+func (l *LocationInfo) String() string {
+	return fmt.Sprintf("%f,%f,%f", l.Latitude, l.Longitude, l.Range)
 }
 
 func NewLocationInfo(raw string) *LocationInfo {
@@ -486,6 +497,13 @@ type UserRecordStatus struct {
 	Recording    bool
 	ErrorCode    *int
 	ErrorMessage *string
+}
+
+func (u *UserRecordStatus) String() string {
+	if u.Recording {
+		return "1"
+	}
+	return "0"
 }
 
 func NewUserRecordStatus(raw string) *UserRecordStatus {
