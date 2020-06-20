@@ -25,7 +25,7 @@ type ScannerConn struct {
 	usbPort   string
 	usbConfig *serial.Config
 	usbConn   *serial.Port
-	usbReader *bufio.Reader
+	usbReader *bufio.Scanner
 }
 
 func NewUDPConn(hostname string, port int) (*ScannerConn, error) {
@@ -56,7 +56,8 @@ func (c *ScannerConn) Open() error {
 		c.udpConn, connErr = net.DialUDP("udp", nil, c.udpAddress)
 	} else if c.Type == ConnTypeUSB {
 		c.usbConn, connErr = serial.OpenPort(c.usbConfig)
-		c.usbReader = bufio.NewReader(c.usbConn)
+		c.usbReader = bufio.NewScanner(c.usbConn)
+		c.usbReader.Split(ScanLinesWithCR)
 	}
 	return connErr
 }
@@ -84,7 +85,12 @@ func (c ScannerConn) Read(b []byte) (n int, err error) {
 	if c.Type == ConnTypeNetwork {
 		return c.udpConn.Read(b)
 	} else if c.Type == ConnTypeUSB {
-		return c.usbReader.Read(b)
+		if !c.usbReader.Scan() {
+			return 0, nil
+		}
+		scanned := c.usbReader.Bytes()
+		copy(b, scanned)
+		return len(scanned), nil
 	}
 	return 0, nil
 }

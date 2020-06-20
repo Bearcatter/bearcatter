@@ -1,6 +1,12 @@
 package main
 
-import "encoding/xml"
+import (
+	"encoding/xml"
+	"fmt"
+	"strconv"
+	"strings"
+	"time"
+)
 
 type ScannerInfo struct {
 	XMLName     xml.Name `xml:"ScannerInfo"`
@@ -328,4 +334,247 @@ type MsiInfo struct {
 		No   string `xml:"No,attr"`
 		EOT  string `xml:"EOT,attr"`
 	} `xml:"Footer"`
+}
+
+type ScannerStatus struct {
+	// Best guesses based on
+	// https://github.com/suidroot/pyUniden/blob/e7705be191474ffada8af12bf1f09c0d4a65057d/pyuniden/main.py#L84-L122
+	// http://www.servicedocs.com/ARTIKELEN/7200250170003.pdf
+	// http://www.netfiles.ru/share/linked/f1/BCD396T_Protocol.pdf
+	Line1          string
+	Line2          string
+	Line3          string
+	Line4          string
+	Line5          string
+	Line6          string
+	Line7          string
+	Line8          string
+	Line9          string
+	Line10         string
+	Line11         string
+	Line12         string
+	Line13         string
+	Line14         string
+	Line15         string
+	Line16         string
+	Line17         string
+	Line18         string
+	Line19         string
+	Line20         string
+	Frequency      float64
+	Squelch        bool
+	Mute           bool
+	WeatherAlerts  bool
+	CCLed          bool
+	AlertLED       bool
+	BacklightLevel int
+	SignalLevel    int
+}
+
+func (s *ScannerStatus) Command() string {
+	return "STS"
+}
+
+func NewScannerStatus(raw string) *ScannerStatus {
+	lines := strings.Split(raw, ",")
+
+	resp := ScannerStatus{}
+
+	if len(lines) >= 2 {
+		resp.Line1 = lines[1]
+	}
+	if len(lines) >= 4 {
+		resp.Line2 = lines[3]
+	}
+	if len(lines) >= 6 {
+		resp.Line3 = lines[5]
+	}
+	if len(lines) >= 8 {
+		resp.Line4 = lines[7]
+	}
+	if len(lines) >= 10 {
+		resp.Line5 = lines[9]
+	}
+	if len(lines) >= 12 {
+		resp.Line6 = lines[11]
+	}
+	if len(lines) >= 14 {
+		resp.Line7 = lines[13]
+	}
+	if len(lines) >= 16 {
+		resp.Line8 = lines[15]
+	}
+	if len(lines) >= 18 {
+		resp.Line9 = lines[17]
+	}
+	if len(lines) >= 20 {
+		resp.Line10 = lines[19]
+	}
+	if len(lines) >= 22 {
+		resp.Line11 = lines[21]
+	}
+	if len(lines) >= 24 {
+		resp.Line12 = lines[23]
+	}
+	if len(lines) >= 26 {
+		resp.Line13 = lines[25]
+	}
+	if len(lines) >= 28 {
+		resp.Line14 = lines[27]
+	}
+	if len(lines) >= 30 {
+		resp.Line15 = lines[29]
+	}
+	if len(lines) >= 32 {
+		resp.Line16 = lines[31]
+	}
+	if len(lines) >= 34 {
+		resp.Line17 = lines[33]
+	}
+	if len(lines) >= 36 {
+		resp.Line18 = lines[35]
+	}
+	if len(lines) >= 38 {
+		resp.Line19 = lines[37]
+	}
+	if len(lines) >= 40 {
+		resp.Line20 = lines[39]
+	}
+
+	resp.Squelch = (lines[36] == "0")
+	resp.SignalLevel, _ = strconv.Atoi(lines[41])
+	resp.BacklightLevel, _ = strconv.Atoi(lines[43])
+
+	return &resp
+}
+
+const DateTimeFormat = "2006,1,2,15,4,5"
+
+type DateTimeInfo struct {
+	DaylightSavings bool
+	Time            *time.Time
+	RTCOK           bool
+}
+
+func (d *DateTimeInfo) String() string {
+	return fmt.Sprintf("%d,%s,%d", d.DaylightSavings, d.Time.Format(DateTimeFormat), d.RTCOK)
+}
+
+func NewDateTimeInfo(raw string) *DateTimeInfo {
+	parsedTime, _ := time.Parse(DateTimeFormat, raw[2:len(raw)-2])
+	dst, _ := strconv.ParseBool(raw[0:1])
+	rtc, _ := strconv.ParseBool(raw[len(raw)-1:])
+	return &DateTimeInfo{
+		DaylightSavings: dst,
+		Time:            &parsedTime,
+		RTCOK:           rtc,
+	}
+}
+
+type LocationInfo struct {
+	Latitude  float64
+	Longitude float64
+	Range     float64
+}
+
+func (l *LocationInfo) String() string {
+	return fmt.Sprintf("%f,%f,%f", l.Latitude, l.Longitude, l.Range)
+}
+
+func NewLocationInfo(raw string) *LocationInfo {
+	split := strings.Split(raw, ",")
+	lat, _ := strconv.ParseFloat(split[0], 10)
+	lon, _ := strconv.ParseFloat(split[1], 10)
+	ran, _ := strconv.ParseFloat(split[2], 10)
+	return &LocationInfo{
+		Latitude:  lat,
+		Longitude: lon,
+		Range:     ran,
+	}
+}
+
+type UserRecordStatus struct {
+	Recording    bool
+	ErrorCode    *int
+	ErrorMessage *string
+}
+
+func (u *UserRecordStatus) String() string {
+	if u.Recording {
+		return "1"
+	}
+	return "0"
+}
+
+func NewUserRecordStatus(raw string) *UserRecordStatus {
+	split := strings.Split(raw, ",")
+	status, _ := strconv.ParseBool(split[0])
+	errCode := 0
+	errMsg := ""
+	ret := &UserRecordStatus{
+		Recording: status,
+	}
+	if len(split) > 1 {
+		errCode, _ = strconv.Atoi(split[1])
+		ret.ErrorCode = &errCode
+		switch errCode {
+		case 1:
+			errMsg = "FILE ACCESS ERROR"
+		case 2:
+			errMsg = "LOW BATTERY"
+		case 3:
+			errMsg = "SESSION OVER LIMIT"
+		case 4:
+			errMsg = "RTC LOST"
+		default:
+			errMsg = "Unknown"
+		}
+		ret.ErrorMessage = &errMsg
+	}
+	return ret
+}
+
+type MenuMode struct {
+	ID    string
+	Index string
+}
+
+func (m *MenuMode) String() string {
+	bits := []string{m.ID}
+	if m.Index != "" && (m.ID == "SCAN_SYSTEM" || m.ID == "SCAN_DEPARTMENT" || m.ID == "SCAN_SITE" || m.ID == "SCAN_CHANNEL" || m.ID == "SRCH_RANGE" || m.ID == "FTO_CHANNEL") {
+		bits = append(bits, m.Index)
+	}
+	return strings.Join(bits, ",")
+}
+
+type MenuBack struct {
+	ReturnLevel int
+}
+
+func (m *MenuBack) String() string {
+	if m.ReturnLevel > 0 {
+		return fmt.Sprintf("0,%d", m.ReturnLevel)
+	}
+	return ""
+}
+
+type MenuSetValue struct {
+	ItemIndex int
+	Value     string
+}
+
+func (m *MenuSetValue) String() string {
+	if m.Value != "" {
+		return fmt.Sprintf("0,%s", strings.ReplaceAll(m.Value, ",", `\t`))
+	}
+	return fmt.Sprintf("0,%d", m.ItemIndex)
+}
+
+type KeyPress struct {
+	Key  string
+	Mode string
+}
+
+func (k *KeyPress) String() string {
+	return fmt.Sprintf("%s,%s", k.Key, k.Mode)
 }
