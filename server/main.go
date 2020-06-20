@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/xml"
 	"flag"
+	"fmt"
 	"net"
 	"os/signal"
 
@@ -187,7 +188,7 @@ func main() {
 
 			if bytes.Equal(buffer[4:9], []byte(`<XML>`)) {
 				xmlMessageType = string(buffer[0:3])
-				xmlMessage = append(xmlMessage, buffer[0:n]...)
+				copy(xmlMessage, buffer[0:n])
 				if IsValidXMLMessage(xmlMessageType, xmlMessage) == false {
 					isXML = true
 					continue
@@ -203,7 +204,8 @@ func main() {
 				if IsValidXMLMessage(xmlMessageType, xmlMessage) == false {
 					continue
 				}
-				buffer = xmlMessage
+				// Double comma to match the /r that is normally here
+				buffer = []byte(fmt.Sprintf(`%s,<XML>,,%s`, xmlMessageType, string(xmlMessage)))
 				isXML = false
 				xmlMessageType = ""
 				xmlMessage = make([]byte, 0)

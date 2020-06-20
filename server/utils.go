@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/xml"
 	"strings"
 	"unicode"
@@ -173,5 +174,27 @@ func IsValidXMLMessage(msgType string, buffer []byte) bool {
 
 	clean := buffer[11:]
 
-	return xml.Unmarshal(clean, &msg) == nil
+	if xmlErr := xml.Unmarshal(clean, &msg); xmlErr != nil {
+		log.Debugln("Error when checking validity of XML message", xmlErr)
+		return false
+	}
+
+	return true
+}
+
+// https://stackoverflow.com/a/52395088/486182
+func ScanLinesWithCR(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	if atEOF && len(data) == 0 {
+		return 0, nil, nil
+	}
+	if i := bytes.IndexByte(data, '\r'); i >= 0 {
+		// We have a full newline-terminated line.
+		return i + 1, data[0:i], nil
+	}
+	// If we're at EOF, we have a final, non-terminated line. Return it.
+	if atEOF {
+		return len(data), data, nil
+	}
+	// Request more data.
+	return 0, nil, nil
 }
