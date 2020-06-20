@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type ScannerInfo struct {
@@ -444,4 +445,21 @@ func NewScannerStatus(raw string) *ScannerStatus {
 	resp.BacklightLevel, _ = strconv.Atoi(lines[43])
 
 	return &resp
+}
+
+type DateTimeInfo struct {
+	DaylightSavings bool
+	Time            *time.Time
+	RTCOK           bool
+}
+
+func NewDateTimeInfo(raw string) *DateTimeInfo {
+	parsedTime, _ := time.Parse("2006,1,2,15,4,5", raw[2:len(raw)-2])
+	dst, _ := strconv.ParseBool(raw[0:1])
+	rtc, _ := strconv.ParseBool(raw[len(raw)-1:])
+	return &DateTimeInfo{
+		DaylightSavings: dst,
+		Time:            &parsedTime,
+		RTCOK:           rtc,
+	}
 }

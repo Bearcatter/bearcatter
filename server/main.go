@@ -250,6 +250,8 @@ func main() {
 				ctrl.SendToRadioMsgChannel([]byte("MSI," + string(buffer[4:])))
 			case "DTM":
 				log.Infoln("DTM:", string(buffer[4:]))
+				timeInfo := NewDateTimeInfo(string(buffer[4:n]))
+				log.Infof("DTM: DST?: %t, Time: %s, RTC OK? %t\n", timeInfo.DaylightSavings, timeInfo.Time, timeInfo.RTCOK)
 				ctrl.SendToRadioMsgChannel([]byte("DTM," + string(buffer[4:])))
 			case "LCR":
 				log.Infoln("LCR:", string(buffer[4:]))
