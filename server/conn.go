@@ -17,10 +17,8 @@ const (
 type ScannerConn struct {
 	Type string
 
-	udpHostname string
-	udpPort     int
-	udpAddress  *net.UDPAddr
-	udpConn     *net.UDPConn
+	udpAddress *net.UDPAddr
+	udpConn    *net.UDPConn
 
 	usbPort   string
 	usbConfig *serial.Config
@@ -28,17 +26,15 @@ type ScannerConn struct {
 	usbReader *bufio.Scanner
 }
 
-func NewUDPConn(hostname string, port int) (*ScannerConn, error) {
-	addr, addrErr := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", hostname, port))
-	if addrErr != nil {
-		return nil, addrErr
+func NewUDPConn(ip net.IP, port int) (*ScannerConn, error) {
+	addr := &net.UDPAddr{
+		IP:   ip,
+		Port: port,
 	}
 
 	return &ScannerConn{
-		Type:        ConnTypeNetwork,
-		udpHostname: hostname,
-		udpPort:     port,
-		udpAddress:  addr,
+		Type:       ConnTypeNetwork,
+		udpAddress: addr,
 	}, nil
 }
 
