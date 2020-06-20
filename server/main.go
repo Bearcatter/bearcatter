@@ -205,7 +205,11 @@ func main() {
 					continue
 				}
 				// Double comma to match the /r that is normally here
-				buffer = []byte(fmt.Sprintf(`%s,<XML>,,%s`, xmlMessageType, string(xmlMessage)))
+				comma := ","
+				if xmlMessageType == "GSI" || xmlMessageType == "PSI" {
+					comma = ",,"
+				}
+				buffer = []byte(fmt.Sprintf(`%s,<XML>%s%s`, xmlMessageType, comma, string(xmlMessage)))
 				isXML = false
 				xmlMessageType = ""
 				xmlMessage = make([]byte, 0)
