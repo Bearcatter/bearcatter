@@ -260,6 +260,8 @@ func main() {
 				ctrl.SendToRadioMsgChannel([]byte("LCR," + string(buffer[4:])))
 			case "URC":
 				log.Infoln("URC:", string(buffer[4:]))
+				recStatus := NewUserRecordStatus(string(buffer[4:n]))
+				log.Infof("URC: Recording? %t, ErrorCode: %d, ErrorMessage: %s\n", recStatus.Recording, recStatus.ErrorCode, recStatus.ErrorMessage)
 				ctrl.SendToRadioMsgChannel([]byte("URC," + string(buffer[4:])))
 			case "STS":
 				log.Infoln("STS", string(buffer[4:]))

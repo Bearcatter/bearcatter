@@ -481,3 +481,37 @@ func NewLocationInfo(raw string) *LocationInfo {
 		Range:     ran,
 	}
 }
+
+type UserRecordStatus struct {
+	Recording    bool
+	ErrorCode    *int
+	ErrorMessage *string
+}
+
+func NewUserRecordStatus(raw string) *UserRecordStatus {
+	split := strings.Split(raw, ",")
+	status, _ := strconv.ParseBool(split[0])
+	errCode := 0
+	errMsg := ""
+	ret := &UserRecordStatus{
+		Recording: status,
+	}
+	if len(split) > 1 {
+		errCode, _ = strconv.Atoi(split[1])
+		ret.ErrorCode = &errCode
+		switch errCode {
+		case 1:
+			errMsg = "FILE ACCESS ERROR"
+		case 2:
+			errMsg = "LOW BATTERY"
+		case 3:
+			errMsg = "SESSION OVER LIMIT"
+		case 4:
+			errMsg = "RTC LOST"
+		default:
+			errMsg = "Unknown"
+		}
+		ret.ErrorMessage = &errMsg
+	}
+	return ret
+}
