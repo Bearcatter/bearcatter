@@ -533,3 +533,39 @@ func NewUserRecordStatus(raw string) *UserRecordStatus {
 	}
 	return ret
 }
+
+type MenuMode struct {
+	ID    string
+	Index string
+}
+
+func (m *MenuMode) String() string {
+	bits := []string{m.ID}
+	if m.Index != "" && (m.ID == "SCAN_SYSTEM" || m.ID == "SCAN_DEPARTMENT" || m.ID == "SCAN_SITE" || m.ID == "SCAN_CHANNEL" || m.ID == "SRCH_RANGE" || m.ID == "FTO_CHANNEL") {
+		bits = append(bits, m.Index)
+	}
+	return strings.Join(bits, ",")
+}
+
+type MenuBack struct {
+	ReturnLevel int
+}
+
+func (m *MenuBack) String() string {
+	if m.ReturnLevel > 0 {
+		return fmt.Sprintf("0,%d", m.ReturnLevel)
+	}
+	return ""
+}
+
+type MenuSetValue struct {
+	ItemIndex int
+	Value     string
+}
+
+func (m *MenuSetValue) String() string {
+	if m.Value != "" {
+		return fmt.Sprintf("0,%s", strings.ReplaceAll(m.Value, ",", `\t`))
+	}
+	return fmt.Sprintf("0,%d", m.ItemIndex)
+}
