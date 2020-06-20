@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/xml"
+	"fmt"
 	"net"
 	"os/signal"
-
+  
 	flag "github.com/spf13/pflag"
 
 	"os"
@@ -16,6 +17,7 @@ import (
 )
 
 type SDSKeyType string
+type SDSKeyModeType string
 type GltXmlType int
 
 const (
@@ -55,6 +57,11 @@ const (
 	KEY_ZIP       SDSKeyType = "Z"
 	KEY_SERV      SDSKeyType = "T"
 	KEY_RANGE     SDSKeyType = "R"
+
+	KEY_MODE_PRESS   SDSKeyModeType = "P" // Press (One Push)
+	KEY_MODE_LONG    SDSKeyModeType = "L" // Long Press (Press and Hold a few seconds)
+	KEY_MODE_HOLD    SDSKeyModeType = "H" // Hold (Press and Hold until Release receive)
+	KEY_MODE_RELEASE SDSKeyModeType = "R" // Release (Cancel Hold state
 
 	GltXmlUnknown GltXmlType = -1
 	GltXmlFL      GltXmlType = iota
@@ -188,7 +195,7 @@ func main() {
 
 			if bytes.Equal(buffer[4:9], []byte(`<XML>`)) {
 				xmlMessageType = string(buffer[0:3])
-				xmlMessage = append(xmlMessage, buffer[0:n]...)
+				copy(xmlMessage, buffer[0:n])
 				if IsValidXMLMessage(xmlMessageType, xmlMessage) == false {
 					isXML = true
 					continue
@@ -204,7 +211,12 @@ func main() {
 				if IsValidXMLMessage(xmlMessageType, xmlMessage) == false {
 					continue
 				}
-				buffer = xmlMessage
+				// Double comma to match the /r that is normally here
+				comma := ","
+				if xmlMessageType == "GSI" || xmlMessageType == "PSI" {
+					comma = ",,"
+				}
+				buffer = []byte(fmt.Sprintf(`%s,<XML>%s%s`, xmlMessageType, comma, string(xmlMessage)))
 				isXML = false
 				xmlMessageType = ""
 				xmlMessage = make([]byte, 0)
@@ -249,14 +261,25 @@ func main() {
 				ctrl.SendToRadioMsgChannel([]byte("MSI," + string(buffer[4:])))
 			case "DTM":
 				log.Infoln("DTM:", string(buffer[4:]))
+				timeInfo := NewDateTimeInfo(string(buffer[4:n]))
+				log.Infof("DTM: DST?: %t, Time: %s, RTC OK? %t\n", timeInfo.DaylightSavings, timeInfo.Time, timeInfo.RTCOK)
 				ctrl.SendToRadioMsgChannel([]byte("DTM," + string(buffer[4:])))
 			case "LCR":
 				log.Infoln("LCR:", string(buffer[4:]))
+				locInfo := NewLocationInfo(string(buffer[4:n]))
+				log.Infof("LCR: Latitude: %f, Longitude: %f, Range: %f\n", locInfo.Latitude, locInfo.Longitude, locInfo.Range)
 				ctrl.SendToRadioMsgChannel([]byte("LCR," + string(buffer[4:])))
 			case "URC":
 				log.Infoln("URC:", string(buffer[4:]))
+				recStatus := NewUserRecordStatus(string(buffer[4:n]))
+				log.Infof("URC: Recording? %t, ErrorCode: %d, ErrorMessage: %s\n", recStatus.Recording, recStatus.ErrorCode, recStatus.ErrorMessage)
 				ctrl.SendToRadioMsgChannel([]byte("URC," + string(buffer[4:])))
 			case "STS":
+				log.Infoln("STS", string(buffer[4:]))
+				stsInfo := NewScannerStatus(string(buffer[4:]))
+				log.Infof("STS: Line 1: %s, Line 2: %s, Line 3: %s, Line 4: %s, SQL: %t, Signal Level: %d\n",
+					stsInfo.Line1, stsInfo.Line2, stsInfo.Line3, stsInfo.Line4, stsInfo.Squelch, stsInfo.SignalLevel)
+				ctrl.SendToRadioMsgChannel([]byte("STS," + string(buffer[4:])))
 			case "GLG":
 			case "GLT":
 				switch getXmlGLTFormatType(buffer[11:]) {
