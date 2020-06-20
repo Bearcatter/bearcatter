@@ -16,6 +16,7 @@ import (
 )
 
 type SDSKeyType string
+type SDSKeyModeType string
 type GltXmlType int
 
 const (
@@ -55,6 +56,11 @@ const (
 	KEY_ZIP       SDSKeyType = "Z"
 	KEY_SERV      SDSKeyType = "T"
 	KEY_RANGE     SDSKeyType = "R"
+
+	KEY_MODE_PRESS   SDSKeyModeType = "P" // Press (One Push)
+	KEY_MODE_LONG    SDSKeyModeType = "L" // Long Press (Press and Hold a few seconds)
+	KEY_MODE_HOLD    SDSKeyModeType = "H" // Hold (Press and Hold until Release receive)
+	KEY_MODE_RELEASE SDSKeyModeType = "R" // Release (Cancel Hold state
 
 	GltXmlUnknown GltXmlType = -1
 	GltXmlFL      GltXmlType = iota

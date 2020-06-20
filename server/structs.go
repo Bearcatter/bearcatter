@@ -569,3 +569,12 @@ func (m *MenuSetValue) String() string {
 	}
 	return fmt.Sprintf("0,%d", m.ItemIndex)
 }
+
+type KeyPress struct {
+	Key  string
+	Mode string
+}
+
+func (k *KeyPress) String() string {
+	return fmt.Sprintf("%s,%s", k.Key, k.Mode)
+}
