@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/xml"
-	"flag"
 	"net"
 	"os/signal"
+
+	flag "github.com/spf13/pflag"
 
 	"os"
 	"time"
@@ -90,22 +91,22 @@ var (
 
 func main() {
 
-	portNum := flag.Int("port", 50536, "udp port for SDS200")
-	wsPortNum := flag.Int("wsport", 8080, "ws port for server")
-	var hostName string
-	flag.StringVar(&hostName, "host", "", "hostname of SDS200")
-	var usbPath string
-	flag.StringVar(&usbPath, "usb", "", "path to SDS100 USB port")
+	portNum := flag.IntP("port", "p", 50536, "udp port for SDS200")
+	wsPortNum := flag.IntP("wsport", "w", 8080, "ws port for server")
+	address := flag.IPP("address", "a", nil, "ip address of SDS200")
+	usbPath := flag.StringP("usb", "u", "", "path to SDS100 USB port")
 
 	flag.Parse()
 
 	ctrl := CreateScannerCtrl()
 	var connCreateErr error
 
-	if hostName != "" {
-		ctrl.conn, connCreateErr = NewUDPConn(hostName, *portNum)
-	} else if usbPath != "" {
-		ctrl.conn, connCreateErr = NewUSBConn(usbPath)
+	if *address != nil {
+		ctrl.conn, connCreateErr = NewUDPConn(*address, *portNum)
+	} else if usbPath != nil && *usbPath != "" {
+		ctrl.conn, connCreateErr = NewUSBConn(*usbPath)
+	} else {
+		log.Fatal("IP address or USB path must be set!")
 	}
 
 	if connCreateErr != nil {
