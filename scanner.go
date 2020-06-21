@@ -78,7 +78,7 @@ func (s *ScannerCtrl) SendToRadioMsgChannel(msg []byte) bool {
 
 	if !s.IsLocked() {
 		log.Infoln("RadioMsgChannel: No Listener to Receive Msg, Msg Not Sent")
-		return false
+		// return false
 	}
 
 	select {
