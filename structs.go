@@ -457,7 +457,15 @@ type DateTimeInfo struct {
 }
 
 func (d *DateTimeInfo) String() string {
-	return fmt.Sprintf("%d,%s,%d", d.DaylightSavings, d.Time.Format(DateTimeFormat), d.RTCOK)
+	dst := 0
+	if d.DaylightSavings {
+		dst = 1
+	}
+	rtc := 0
+	if d.RTCOK {
+		rtc = 1
+	}
+	return fmt.Sprintf("%d,%s,%d", dst, d.Time.Format(DateTimeFormat), rtc)
 }
 
 func NewDateTimeInfo(raw string) *DateTimeInfo {

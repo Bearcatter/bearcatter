@@ -6,14 +6,12 @@ import (
 	"encoding/xml"
 	"fmt"
 	"net"
-	"os/signal"
-  
-	flag "github.com/spf13/pflag"
-
 	"os"
+	"os/signal"
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	flag "github.com/spf13/pflag"
 )
 
 type SDSKeyType string
@@ -272,7 +270,7 @@ func main() {
 			case "URC":
 				log.Infoln("URC:", string(buffer[4:]))
 				recStatus := NewUserRecordStatus(string(buffer[4:n]))
-				log.Infof("URC: Recording? %t, ErrorCode: %d, ErrorMessage: %s\n", recStatus.Recording, recStatus.ErrorCode, recStatus.ErrorMessage)
+				log.Infof("URC: Recording? %t, ErrorCode: %d, ErrorMessage: %s\n", recStatus.Recording, recStatus.ErrorCode, *recStatus.ErrorMessage)
 				ctrl.SendToRadioMsgChannel([]byte("URC," + string(buffer[4:])))
 			case "STS":
 				log.Infoln("STS", string(buffer[4:]))
@@ -468,9 +466,10 @@ func main() {
 
 	log.Infoln("Shutting down WebSocket server")
 
-	ctx, _ := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	if err := ctrl.s.Shutdown(ctx); err != nil {
 		log.Errorln("Failed to Shutdown", err)
 	}
+	cancel()
 	log.Infoln("UDPServer Terminated.")
 }
