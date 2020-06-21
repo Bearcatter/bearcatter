@@ -3,11 +3,16 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -100,6 +105,7 @@ func main() {
 	wsPortNum := flag.IntP("wsport", "w", 8080, "ws port for server")
 	address := flag.IPP("address", "a", nil, "ip address of SDS200")
 	usbPath := flag.StringP("usb", "u", "", "path to SDS100 USB port")
+	recordingsPath := flag.StringP("recordings", "r", "audio", "path to store recordings in")
 
 	flag.Parse()
 
@@ -128,6 +134,15 @@ func main() {
 		log.Infoln("Local UDP client address", ctrl.conn.udpConn.LocalAddr().String())
 	}
 
+	absRecordingsPath, absRecordingsPathErr := filepath.Abs(*recordingsPath)
+	if absRecordingsPathErr != nil {
+		log.Fatalln("Error when attempting to resolve recordings path")
+	}
+
+	if _, err := os.Stat(absRecordingsPath); os.IsNotExist(err) {
+		os.Mkdir(absRecordingsPath, os.ModeDir)
+	}
+
 	defer ctrl.conn.Close()
 
 	// write a message to Scanner
@@ -139,14 +154,13 @@ func main() {
 				return
 			case msgToRadio := <-ctrl.hostMsg:
 				elapsed := time.Since(msgToRadio.ts)
-				log.Infof("Received Message:[ql=%d] From Host:[%s]: [%s]", len(ctrl.hostMsg), elapsed,
+				log.Debugf("Host->Scanner:[ql=%d]: [%s]: [%s]", len(ctrl.hostMsg), elapsed,
 					crlfStrip(msgToRadio.msg, LF|NL))
 				if _, writeErr := ctrl.conn.Write(msgToRadio.msg); writeErr != nil {
 					log.Errorln("Error Writing to scanner", writeErr)
-				} else {
-					log.Infoln("Sent Message From Host", string(msgToRadio.msg))
-					ctrl.locker.pktSent++
+					continue
 				}
+				ctrl.locker.pktSent++
 
 			default:
 				time.Sleep(time.Millisecond * ctrl.GoProcDelay * ctrl.GoProcMultiplier)
@@ -166,6 +180,7 @@ func main() {
 			// ctrl.conn.SetReadDeadline(time.Now().Add(1 * time.Second))
 			buffer := make([]byte, 16384)
 			n, readErr := ctrl.conn.Read(buffer)
+			log.Infoln("Scanner -> Host", string(buffer[0:n]))
 			if readErr != nil {
 				log.Errorln("Error on read!", readErr)
 				if e, ok := readErr.(net.Error); !ok || !e.Timeout() {
@@ -223,6 +238,11 @@ func main() {
 			msgType := string(buffer[:3])
 
 			ctrl.locker.pktRecv++
+
+			if buffer[3] == byte('\t') {
+				log.Warnln("Received a HomePatrol message!")
+			}
+
 			switch msgType {
 			case "APR":
 				log.Infoln("APR", string(buffer[4:]))
@@ -424,6 +444,102 @@ func main() {
 			case "KEY":
 				log.Infoln("KEY", string(buffer[4:]))
 				ctrl.SendToRadioMsgChannel([]byte("KEY," + string(buffer[4:])))
+			// HomePatrol Commands
+			case "RMT":
+				log.Infoln(msgType, string(buffer))
+				ctrl.SendToRadioMsgChannel(buffer)
+			case "AUF":
+				split := strings.Split(string(buffer[0:n]), "\t")
+
+				hpCmd := split[1]
+
+				if len(split) > 2 {
+					if split[2] == "ERR" {
+						log.Warnln("Scanner threw ERR during file transfer!")
+						continue
+					} else if split[2] == "NG" {
+						log.Warnln("Scanner said last command was invalid during file transfer")
+						continue
+					}
+				}
+
+				switch hpCmd {
+				case "ERR":
+					log.Warnln("Scanner threw DATA ERR during file transfer!")
+					continue
+				case "NG":
+					log.Warnln("Scanner said last command was invalid during DATA")
+					continue
+				case "STS":
+					ctrl.SendToRadioMsgChannel(buffer)
+				case "INFO":
+					ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "INFO", "ACK"})))
+
+					newFile, newFileErr := NewAudioFeedFile(split[2:])
+					if newFileErr != nil {
+						if newFileErr != ErrNoFile {
+							log.Errorln("Error processing new file notification!", newFileErr)
+						}
+						continue
+					}
+					log.Debugf("Incoming file %v\n", newFile)
+					ctrl.incomingFile = newFile
+
+					ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "DATA"})))
+				case "DATA":
+					dataSubCmd := split[2]
+					switch dataSubCmd {
+					case "EOT":
+						// End of transmission
+						log.Infoln("Finished receiving file!")
+
+						ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "DATA", "ACK"})))
+
+						ctrl.incomingFile.Finished = true
+
+						filePath := fmt.Sprintf("%s/%s", absRecordingsPath, ctrl.incomingFile.Name)
+
+						if saveAudioErr := ioutil.WriteFile(filePath, ctrl.incomingFile.Data, 0777); saveAudioErr != nil {
+							log.Errorln("Error when saving audio file!", saveAudioErr)
+						}
+
+						if metadataErr := ctrl.incomingFile.ParseMetadata(filePath); metadataErr != nil {
+							log.Errorln("Error when parsing metadata", metadataErr)
+							continue
+						}
+
+						metadataJSON, metadataJSONErr := json.MarshalIndent(&ctrl.incomingFile.Metadata, "", "    ")
+						if metadataJSONErr != nil {
+							log.Errorln("Error when marshalling metadata", metadataJSONErr)
+							continue
+						}
+
+						if saveMetadataErr := ioutil.WriteFile(fmt.Sprintf("%s.json", filePath), metadataJSON, 0777); saveMetadataErr != nil {
+							log.Errorln("Error when saving metadata file!", saveMetadataErr)
+						}
+
+						break
+					case "CAN":
+						log.Warnln("File transfer canceled")
+					default: // Receiving data
+						blockNum := split[2]
+						fileData := split[3]
+						log.Infof("Receiving file block %s with file length %d\n", blockNum, len(fileData))
+						hexData, hexDataErr := hex.DecodeString(fileData)
+						if hexDataErr != nil {
+							log.Errorln("Error when converting incoming file chunk to hex", hexDataErr)
+						}
+						ctrl.incomingFile.Data = append(ctrl.incomingFile.Data, hexData...)
+
+						time.Sleep(50 * time.Millisecond)
+
+						ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "DATA", "ACK"})))
+						if !ctrl.incomingFile.Finished {
+							time.Sleep(50 * time.Millisecond)
+							ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "DATA"})))
+						}
+					}
+				}
 
 			case "ERR":
 				log.Errorln("Scanner threw an error!")
@@ -437,8 +553,28 @@ func main() {
 				log.Infoln("Shutting down reader...")
 				do_quit = true
 			default:
-				log.Infoln("Sleeping")
+				log.Traceln("Sleeping")
 				time.Sleep(time.Millisecond * ctrl.GoProcDelay)
+			}
+		}
+	}(ctrl)
+
+	ticker := time.NewTicker(1 * time.Second)
+	go func(ctrl *ScannerCtrl) {
+		time.Sleep(1 * time.Second)
+		success := ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "STS", "ON"})))
+		log.Infoln("success", success)
+
+		time.Sleep(1 * time.Second)
+
+		for {
+			select {
+			case <-ticker.C:
+				ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "INFO"})))
+			case <-ctrl.rq:
+				log.Infoln("Shutting down file polling")
+				ticker.Stop()
+				return
 			}
 		}
 	}(ctrl)
@@ -454,6 +590,16 @@ func main() {
 
 	// gracefully terminate go routines
 	log.Infoln("Terminating on signal...")
+
+	if ctrl.incomingFile != nil && ctrl.incomingFile.Finished {
+		log.Infoln("Terminating file transfer session")
+		ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "INFO", "CAN"})))
+		ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "DATA", "CAN"})))
+	}
+
+	ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "STS", "OFF"})))
+	time.Sleep(50 * time.Millisecond)
+
 	ctrl.rq <- true
 	ctrl.wq <- true
 

@@ -1,6 +1,6 @@
-// Package unidenwavparse provides Uniden Bearcat Scanner WAV file parsing.
+// Package wavparse provides Uniden Bearcat Scanner WAV file parsing.
 // Portions from https://github.com/go-audio/wav
-package unidenwavparse
+package wavparse
 
 import (
 	"bytes"
@@ -231,11 +231,13 @@ func decodeLISTChunk(ch *riff.Chunk) (*ListChunk, error) {
 			case markerISRC:
 				recListChunk.Tone = nullTermStr(scratch)
 			case markerITCH:
-				uid, uidErr := strconv.ParseInt(nullTermStr(scratch)[4:], 10, 64)
-				if uidErr != nil {
-					return nil, uidErr
+				if len(nullTermStr(scratch)) > 0 {
+					uid, uidErr := strconv.ParseInt(nullTermStr(scratch)[4:], 10, 64)
+					if uidErr != nil {
+						return nil, uidErr
+					}
+					recListChunk.UnitID = uid
 				}
-				recListChunk.UnitID = uid
 			case markerISBJ:
 				recListChunk.FavoriteListName = nullTermStr(scratch)
 			case markerICOP:

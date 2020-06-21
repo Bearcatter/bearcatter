@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/Bearcatter/bearcatter/wavparse"
 )
 
 type ScannerInfo struct {
@@ -585,4 +587,50 @@ type KeyPress struct {
 
 func (k *KeyPress) String() string {
 	return fmt.Sprintf("%s,%s", k.Key, k.Mode)
+}
+
+type AudioFeedFile struct {
+	Name      string
+	Size      int64
+	Timestamp *time.Time
+	Data      []byte
+	Finished  bool
+	Metadata  *wavparse.Recording
+}
+
+func (a *AudioFeedFile) ParseMetadata(file string) error {
+	metadata, metadataErr := wavparse.DecodeRecording(file)
+	if metadataErr != nil {
+		return metadataErr
+	}
+	a.Metadata = metadata
+	return nil
+}
+
+var ErrNoFile = fmt.Errorf("no file name was set, probably waiting for info")
+
+func NewAudioFeedFile(pieces []string) (*AudioFeedFile, error) {
+	if pieces[0] == "" {
+		return nil, ErrNoFile
+	}
+	file := &AudioFeedFile{
+		Name: pieces[0],
+	}
+
+	size, sizeErr := strconv.ParseInt(pieces[1], 10, 64)
+	if sizeErr != nil {
+		return nil, sizeErr
+	}
+
+	file.Size = size
+
+	// 06/20/2020 20:31:24
+	ts, tsErr := time.Parse("01/02/2006 15:04:05", pieces[2])
+	if tsErr != nil {
+		return nil, tsErr
+	}
+
+	file.Timestamp = &ts
+
+	return file, nil
 }
