@@ -103,6 +103,7 @@ type UnidenChunk struct {
 	Site         SiteInfo
 	UnitID       int64
 	Location     LocationInfo
+	Debug        []string
 }
 
 func DecodeRecording(file string) (*Recording, error) {
@@ -339,6 +340,7 @@ func decodeUNIDChunk(ch *riff.Chunk) (*UnidenChunk, error) {
 			},
 			UnitID:    uid,
 			Frequency: freq,
+			Debug:     strings.Split(string(buf), "\x00"),
 		}
 	}
 	ch.Drain()
