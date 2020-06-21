@@ -96,7 +96,7 @@ func (s *ScannerCtrl) SendToHostMsgChannel(msg []byte) bool {
 
 	if !s.IsLocked() {
 		log.Warnln("HostMsgChannel: No Listener to Receive Msg, Msg Not Sent")
-		return false
+		// return false
 	}
 
 	select {
