@@ -46,6 +46,7 @@ type ScannerCtrl struct {
 	GoProcDelay      time.Duration
 	GoProcMultiplier time.Duration
 	mode             Modal
+	incomingFile     *AudioFeedFile
 }
 
 func (s *ScannerCtrl) IsLocked() bool {
@@ -53,7 +54,7 @@ func (s *ScannerCtrl) IsLocked() bool {
 	s.locker.Lock()
 	if s.locker.state == true {
 		locked = true
-		log.Infof("UDP Packets Sent: [%d] UDP Packets Recv: [%d]", s.locker.pktSent, s.locker.pktRecv)
+		log.Tracef("UDP Packets Sent: [%d] UDP Packets Recv: [%d]", s.locker.pktSent, s.locker.pktRecv)
 	} else {
 		locked = false
 	}
@@ -77,7 +78,7 @@ func (s *ScannerCtrl) SendToRadioMsgChannel(msg []byte) bool {
 
 	if !s.IsLocked() {
 		log.Infoln("RadioMsgChannel: No Listener to Receive Msg, Msg Not Sent")
-		return false
+		// return false
 	}
 
 	select {
@@ -94,8 +95,8 @@ func (s *ScannerCtrl) SendToRadioMsgChannel(msg []byte) bool {
 func (s *ScannerCtrl) SendToHostMsgChannel(msg []byte) bool {
 
 	if !s.IsLocked() {
-		log.Infoln("HostMsgChannel: No Listener to Receive Msg, Msg Not Sent")
-		return false
+		log.Warnln("HostMsgChannel: No Listener to Receive Msg, Msg Not Sent")
+		// return false
 	}
 
 	select {

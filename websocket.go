@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gobwas/ws"
@@ -65,29 +66,39 @@ func startWSServer(host string, port int, ctrl *ScannerCtrl) (*http.Server, erro
 
 				if readErr != nil {
 					// handle error
-					log.Infoln("Failed to read from WS, Terminating Client Conection", readErr)
+					log.Errorln("Failed to read from WS, Terminating Client Conection", readErr)
 					done <- true
 					quitReader <- true
 					return
-				} else {
-					if !validMsgFromWSClient(msgFromHost) {
-						log.Infof("Message From WS Failed Validation: [%s]", crlfStrip(msgFromHost, LF))
-					} else {
-						if string(msgFromHost) == TERMINATE {
-							log.Infoln("Received Client QUIT Command: Terminating Client Conection")
-							done <- true
-							quitReader <- true
-							return
-						}
-
-						if string(msgFromHost) == "" || string(msgFromHost) == "\n" {
-							continue
-						}
-
-						log.Infof("Message From Host: [%s]", crlfStrip(msgFromHost, LF))
-						ctrl.SendToHostMsgChannel(msgFromHost)
-					}
 				}
+
+				if !validMsgFromWSClient(msgFromHost) {
+					log.Warnln("Message From WS Failed Validation", crlfStrip(msgFromHost, LF))
+					return
+				}
+
+				strMsg := string(crlfStrip(msgFromHost, LF))
+				if strMsg == TERMINATE {
+					log.Infoln("Received Client QUIT Command: Terminating Client Conection")
+					done <- true
+					quitReader <- true
+					return
+				}
+
+				if strMsg == "" || strMsg == "\n" {
+					continue
+				}
+
+				if strings.HasPrefix(strMsg, "HP,") {
+					log.Infof("HomePatrol message From Host: [%s]", crlfStrip(msgFromHost, LF))
+					hpCmd := homepatrolCommand(strings.Split(strMsg[3:], "|"))
+					log.Infof("Sending HomePatrol message %#q\n", hpCmd)
+					success := ctrl.SendToHostMsgChannel([]byte(hpCmd))
+					log.Infoln("Sent message?", success)
+					continue
+				}
+				// log.Infof("Message From Host: [%s]", crlfStrip(msgFromHost, LF))
+				ctrl.SendToHostMsgChannel(msgFromHost)
 			}
 		}()
 

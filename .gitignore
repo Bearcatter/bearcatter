@@ -17,3 +17,5 @@ server
 # vendor/
 
 .DS_Store
+
+audio/*

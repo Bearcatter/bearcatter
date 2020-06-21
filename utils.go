@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"encoding/xml"
+	"fmt"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -197,4 +199,19 @@ func ScanLinesWithCR(data []byte, atEOF bool) (advance int, token []byte, err er
 	}
 	// Request more data.
 	return 0, nil, nil
+}
+
+func homepatrolChecksum(cmd string) string {
+	cmd = fmt.Sprintf("%s\t", cmd)
+	chk := int64(0)
+	for _, char := range cmd {
+		chk = chk + int64(char)
+	}
+
+	return strconv.FormatInt(chk, 10)
+}
+
+func homepatrolCommand(args []string) string {
+	joined := strings.Join(args, "\t")
+	return fmt.Sprintf("%s\t%s\n", joined, homepatrolChecksum(joined))
 }
