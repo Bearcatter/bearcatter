@@ -106,8 +106,28 @@ func main() {
 	address := flag.StringP("address", "a", "", "ip address of SDS200")
 	usbPath := flag.StringP("usb", "u", "", "path to SDS100 USB port")
 	recordingsPath := flag.StringP("recordings", "r", "audio", "path to store recordings in")
+	loggerLvl := flag.String("level", "InfoLevel", "The level of log to show [default = InfoLevel]. Available options are (PanicLevel, FatalLevel, ErrorLevel, WarnLevel, InfoLevel, DebugLevel, TraceLevel)")
 
 	flag.Parse()
+
+	switch *loggerLvl {
+	case "TraceLevel":
+		log.SetLevel(log.TraceLevel)
+	case "DebugLevel":
+		log.SetLevel(log.DebugLevel)
+	case "InfoLevel":
+		log.SetLevel(log.InfoLevel)
+	case "WarnLevel":
+		log.SetLevel(log.WarnLevel)
+	case "ErrorLevel":
+		log.SetLevel(log.ErrorLevel)
+	case "FatalLevel":
+		log.SetLevel(log.FatalLevel)
+	case "PanicLevel":
+		log.SetLevel(log.PanicLevel)
+	default:
+		log.Fatalf("Logrus logger level doesn't exist")
+	}
 
 	ctrl := CreateScannerCtrl()
 	var connCreateErr error
