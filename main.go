@@ -101,12 +101,12 @@ var (
 
 func main() {
 
-	portNum := flag.IntP("port", "p", 50536, "udp port for SDS200")
-	wsPortNum := flag.IntP("wsport", "w", 8080, "ws port for server")
-	address := flag.StringP("address", "a", "", "ip address of SDS200")
-	usbPath := flag.StringP("usb", "u", "", "path to SDS100 USB port")
-	recordingsPath := flag.StringP("recordings", "r", "audio", "path to store recordings in")
-	loggerLvl := flag.String("level", "InfoLevel", "The level of log to show [default = InfoLevel]. Available options are (PanicLevel, FatalLevel, ErrorLevel, WarnLevel, InfoLevel, DebugLevel, TraceLevel)")
+	loggerLvl := flag.String("log.level", "InfoLevel", "The level of log to show [default = InfoLevel]. Available options are (PanicLevel, FatalLevel, ErrorLevel, WarnLevel, InfoLevel, DebugLevel, TraceLevel)")
+	recordingsPath := flag.StringP("recordings.path", "r", "audio", "Path to store recordings in")
+	udpAddress := flag.StringP("udp.address", "a", "", "IP address or hostname of SDS200")
+	udpPortNumber := flag.IntP("udp.port", "p", 50536, "UDP port of SDS200")
+	usbPath := flag.StringP("usb.path", "u", "", "Path to SDS100 USB port")
+	websocketPort := flag.Int("websocket.port", 8080, "WebSocket port to accept connections on")
 
 	flag.Parse()
 
@@ -132,13 +132,13 @@ func main() {
 	ctrl := CreateScannerCtrl()
 	var connCreateErr error
 
-	if address != nil && *address != "" {
-		resolved, resolvedErr := net.ResolveIPAddr("ip", *address)
+	if udpAddress != nil && *udpAddress != "" {
+		resolved, resolvedErr := net.ResolveIPAddr("ip", *udpAddress)
 		if resolvedErr != nil {
 			log.Fatalln("Error when processing UDP address", resolvedErr)
 		}
 
-		ctrl.conn, connCreateErr = NewUDPConn(resolved.IP, *portNum)
+		ctrl.conn, connCreateErr = NewUDPConn(resolved.IP, *udpPortNumber)
 	} else if usbPath != nil && *usbPath != "" {
 		ctrl.conn, connCreateErr = NewUSBConn(*usbPath)
 	} else {
@@ -604,7 +604,7 @@ func main() {
 	}(ctrl)
 
 	var wsErr error
-	ctrl.s, wsErr = startWSServer("", *wsPortNum, ctrl)
+	ctrl.s, wsErr = startWSServer("", *websocketPort, ctrl)
 	if wsErr != nil {
 		log.Fatalln("Failed to start WebSocket server", wsErr)
 	}
