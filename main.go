@@ -101,19 +101,44 @@ var (
 
 func main() {
 
-	portNum := flag.IntP("port", "p", 50536, "udp port for SDS200")
-	wsPortNum := flag.IntP("wsport", "w", 8080, "ws port for server")
-	address := flag.IPP("address", "a", nil, "ip address of SDS200")
-	usbPath := flag.StringP("usb", "u", "", "path to SDS100 USB port")
-	recordingsPath := flag.StringP("recordings", "r", "audio", "path to store recordings in")
+	loggerLvl := flag.String("log.level", "InfoLevel", "The level of log to show [default = InfoLevel]. Available options are (PanicLevel, FatalLevel, ErrorLevel, WarnLevel, InfoLevel, DebugLevel, TraceLevel)")
+	recordingsPath := flag.StringP("recordings.path", "r", "audio", "Path to store recordings in")
+	udpAddress := flag.StringP("udp.address", "a", "", "IP address or hostname of SDS200")
+	udpPortNumber := flag.IntP("udp.port", "p", 50536, "UDP port of SDS200")
+	usbPath := flag.StringP("usb.path", "u", "", "Path to SDS100 USB port")
+	websocketPort := flag.Int("websocket.port", 8080, "WebSocket port to accept connections on")
 
 	flag.Parse()
+
+	switch *loggerLvl {
+	case "TraceLevel":
+		log.SetLevel(log.TraceLevel)
+	case "DebugLevel":
+		log.SetLevel(log.DebugLevel)
+	case "InfoLevel":
+		log.SetLevel(log.InfoLevel)
+	case "WarnLevel":
+		log.SetLevel(log.WarnLevel)
+	case "ErrorLevel":
+		log.SetLevel(log.ErrorLevel)
+	case "FatalLevel":
+		log.SetLevel(log.FatalLevel)
+	case "PanicLevel":
+		log.SetLevel(log.PanicLevel)
+	default:
+		log.Fatalf("Logrus logger level doesn't exist")
+	}
 
 	ctrl := CreateScannerCtrl()
 	var connCreateErr error
 
-	if *address != nil {
-		ctrl.conn, connCreateErr = NewUDPConn(*address, *portNum)
+	if udpAddress != nil && *udpAddress != "" {
+		resolved, resolvedErr := net.ResolveIPAddr("ip", *udpAddress)
+		if resolvedErr != nil {
+			log.Fatalln("Error when processing UDP address", resolvedErr)
+		}
+
+		ctrl.conn, connCreateErr = NewUDPConn(resolved.IP, *udpPortNumber)
 	} else if usbPath != nil && *usbPath != "" {
 		ctrl.conn, connCreateErr = NewUSBConn(*usbPath)
 	} else {
@@ -154,8 +179,7 @@ func main() {
 				return
 			case msgToRadio := <-ctrl.hostMsg:
 				elapsed := time.Since(msgToRadio.ts)
-				log.Debugf("Host->Scanner:[ql=%d]: [%s]: [%s]", len(ctrl.hostMsg), elapsed,
-					crlfStrip(msgToRadio.msg, LF|NL))
+				log.Debugf("Host->Scanner:[ql=%d]: [%s]: [%#q]", len(ctrl.hostMsg), elapsed, msgToRadio.msg)
 				if _, writeErr := ctrl.conn.Write(msgToRadio.msg); writeErr != nil {
 					log.Errorln("Error Writing to scanner", writeErr)
 					continue
@@ -180,7 +204,7 @@ func main() {
 			// ctrl.conn.SetReadDeadline(time.Now().Add(1 * time.Second))
 			buffer := make([]byte, 16384)
 			n, readErr := ctrl.conn.Read(buffer)
-			log.Infoln("Scanner -> Host", string(buffer[0:n]))
+			log.Debugf("Scanner->Host:[ql=%d]: [%#q]\n", len(ctrl.hostMsg), buffer[0:n])
 			if readErr != nil {
 				log.Errorln("Error on read!", readErr)
 				if e, ok := readErr.(net.Error); !ok || !e.Timeout() {
@@ -559,28 +583,30 @@ func main() {
 		}
 	}(ctrl)
 
-	ticker := time.NewTicker(1 * time.Second)
-	go func(ctrl *ScannerCtrl) {
-		time.Sleep(1 * time.Second)
-		success := ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "STS", "ON"})))
-		log.Infoln("success", success)
+	if ctrl.conn.Type == ConnTypeUSB {
+		ticker := time.NewTicker(1 * time.Second)
+		go func(ctrl *ScannerCtrl) {
+			time.Sleep(1 * time.Second)
+			success := ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "STS", "ON"})))
+			log.Infoln("success", success)
 
-		time.Sleep(1 * time.Second)
+			time.Sleep(1 * time.Second)
 
-		for {
-			select {
-			case <-ticker.C:
-				ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "INFO"})))
-			case <-ctrl.rq:
-				log.Infoln("Shutting down file polling")
-				ticker.Stop()
-				return
+			for {
+				select {
+				case <-ticker.C:
+					ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "INFO"})))
+				case <-ctrl.rq:
+					log.Infoln("Shutting down file polling")
+					ticker.Stop()
+					return
+				}
 			}
-		}
-	}(ctrl)
+		}(ctrl)
+	}
 
 	var wsErr error
-	ctrl.s, wsErr = startWSServer("", *wsPortNum, ctrl)
+	ctrl.s, wsErr = startWSServer("", *websocketPort, ctrl)
 	if wsErr != nil {
 		log.Fatalln("Failed to start WebSocket server", wsErr)
 	}
@@ -591,14 +617,16 @@ func main() {
 	// gracefully terminate go routines
 	log.Infoln("Terminating on signal...")
 
-	if ctrl.incomingFile != nil && ctrl.incomingFile.Finished {
-		log.Infoln("Terminating file transfer session")
-		ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "INFO", "CAN"})))
-		ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "DATA", "CAN"})))
-	}
+	if ctrl.conn.Type == ConnTypeUSB {
+		if ctrl.incomingFile != nil && ctrl.incomingFile.Finished {
+			log.Infoln("Terminating file transfer session")
+			ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "INFO", "CAN"})))
+			ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "DATA", "CAN"})))
+		}
 
-	ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "STS", "OFF"})))
-	time.Sleep(50 * time.Millisecond)
+		ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "STS", "OFF"})))
+		time.Sleep(50 * time.Millisecond)
+	}
 
 	ctrl.rq <- true
 	ctrl.wq <- true

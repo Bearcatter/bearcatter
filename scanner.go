@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"net"
 	"net/http"
 	"os"
@@ -11,8 +12,9 @@ import (
 )
 
 type MsgPacket struct {
-	msg []byte
-	ts  time.Time
+	msg        []byte
+	ts         time.Time
+	homePatrol bool
 }
 
 type Locker struct {
@@ -81,8 +83,14 @@ func (s *ScannerCtrl) SendToRadioMsgChannel(msg []byte) bool {
 		// return false
 	}
 
+	pkt := MsgPacket{
+		msg:        msg,
+		ts:         time.Now(),
+		homePatrol: bytes.Contains(msg, []byte("\t")),
+	}
+
 	select {
-	case s.radioMsg <- MsgPacket{msg, time.Now()}:
+	case s.radioMsg <- pkt:
 		log.Infof("Send Msg[ql=%d]: [%s] to Radio Msg Channel", len(s.radioMsg), msg)
 		return true
 	default:
@@ -99,8 +107,18 @@ func (s *ScannerCtrl) SendToHostMsgChannel(msg []byte) bool {
 		// return false
 	}
 
+	pkt := MsgPacket{
+		msg:        msg,
+		ts:         time.Now(),
+		homePatrol: bytes.Contains(msg, []byte("\t")),
+	}
+
+	if s.conn.Type == ConnTypeNetwork && !pkt.homePatrol && !bytes.HasSuffix(pkt.msg, []byte("\r")) {
+		pkt.msg = bytes.ReplaceAll(pkt.msg, []byte("\n"), []byte("\r"))
+	}
+
 	select {
-	case s.hostMsg <- MsgPacket{msg, time.Now()}:
+	case s.hostMsg <- pkt:
 		return true
 	default:
 		log.Infof("Queue Full, No Message Sent: %d", len(s.radioMsg))
