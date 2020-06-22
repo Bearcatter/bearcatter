@@ -583,25 +583,27 @@ func main() {
 		}
 	}(ctrl)
 
-	ticker := time.NewTicker(1 * time.Second)
-	go func(ctrl *ScannerCtrl) {
-		time.Sleep(1 * time.Second)
-		success := ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "STS", "ON"})))
-		log.Infoln("success", success)
+	if ctrl.conn.Type == ConnTypeUSB {
+		ticker := time.NewTicker(1 * time.Second)
+		go func(ctrl *ScannerCtrl) {
+			time.Sleep(1 * time.Second)
+			success := ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "STS", "ON"})))
+			log.Infoln("success", success)
 
-		time.Sleep(1 * time.Second)
+			time.Sleep(1 * time.Second)
 
-		for {
-			select {
-			case <-ticker.C:
-				ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "INFO"})))
-			case <-ctrl.rq:
-				log.Infoln("Shutting down file polling")
-				ticker.Stop()
-				return
+			for {
+				select {
+				case <-ticker.C:
+					ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "INFO"})))
+				case <-ctrl.rq:
+					log.Infoln("Shutting down file polling")
+					ticker.Stop()
+					return
+				}
 			}
-		}
-	}(ctrl)
+		}(ctrl)
+	}
 
 	var wsErr error
 	ctrl.s, wsErr = startWSServer("", *websocketPort, ctrl)
@@ -615,14 +617,16 @@ func main() {
 	// gracefully terminate go routines
 	log.Infoln("Terminating on signal...")
 
-	if ctrl.incomingFile != nil && ctrl.incomingFile.Finished {
-		log.Infoln("Terminating file transfer session")
-		ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "INFO", "CAN"})))
-		ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "DATA", "CAN"})))
-	}
+	if ctrl.conn.Type == ConnTypeUSB {
+		if ctrl.incomingFile != nil && ctrl.incomingFile.Finished {
+			log.Infoln("Terminating file transfer session")
+			ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "INFO", "CAN"})))
+			ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "DATA", "CAN"})))
+		}
 
-	ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "STS", "OFF"})))
-	time.Sleep(50 * time.Millisecond)
+		ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "STS", "OFF"})))
+		time.Sleep(50 * time.Millisecond)
+	}
 
 	ctrl.rq <- true
 	ctrl.wq <- true

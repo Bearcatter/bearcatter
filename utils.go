@@ -213,5 +213,5 @@ func homepatrolChecksum(cmd string) string {
 
 func homepatrolCommand(args []string) string {
 	joined := strings.Join(args, "\t")
-	return fmt.Sprintf("%s\t%s\n", joined, homepatrolChecksum(joined))
+	return fmt.Sprintf("%s\t%s\r", joined, homepatrolChecksum(joined))
 }
