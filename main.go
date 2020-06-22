@@ -103,7 +103,7 @@ func main() {
 
 	portNum := flag.IntP("port", "p", 50536, "udp port for SDS200")
 	wsPortNum := flag.IntP("wsport", "w", 8080, "ws port for server")
-	address := flag.IPP("address", "a", nil, "ip address of SDS200")
+	address := flag.StringP("address", "a", "", "ip address of SDS200")
 	usbPath := flag.StringP("usb", "u", "", "path to SDS100 USB port")
 	recordingsPath := flag.StringP("recordings", "r", "audio", "path to store recordings in")
 
@@ -112,8 +112,13 @@ func main() {
 	ctrl := CreateScannerCtrl()
 	var connCreateErr error
 
-	if *address != nil {
-		ctrl.conn, connCreateErr = NewUDPConn(*address, *portNum)
+	if address != nil && *address != "" {
+		resolved, resolvedErr := net.ResolveIPAddr("ip", *address)
+		if resolvedErr != nil {
+			log.Fatalln("Error when processing UDP address", resolvedErr)
+		}
+
+		ctrl.conn, connCreateErr = NewUDPConn(resolved.IP, *portNum)
 	} else if usbPath != nil && *usbPath != "" {
 		ctrl.conn, connCreateErr = NewUSBConn(*usbPath)
 	} else {
