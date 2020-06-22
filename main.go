@@ -159,8 +159,7 @@ func main() {
 				return
 			case msgToRadio := <-ctrl.hostMsg:
 				elapsed := time.Since(msgToRadio.ts)
-				log.Debugf("Host->Scanner:[ql=%d]: [%s]: [%s]", len(ctrl.hostMsg), elapsed,
-					crlfStrip(msgToRadio.msg, LF|NL))
+				log.Debugf("Host->Scanner:[ql=%d]: [%s]: [%#q]", len(ctrl.hostMsg), elapsed, msgToRadio.msg)
 				if _, writeErr := ctrl.conn.Write(msgToRadio.msg); writeErr != nil {
 					log.Errorln("Error Writing to scanner", writeErr)
 					continue
@@ -185,7 +184,7 @@ func main() {
 			// ctrl.conn.SetReadDeadline(time.Now().Add(1 * time.Second))
 			buffer := make([]byte, 16384)
 			n, readErr := ctrl.conn.Read(buffer)
-			log.Infoln("Scanner -> Host", string(buffer[0:n]))
+			log.Debugf("Scanner->Host:[ql=%d]: [%#q]\n", len(ctrl.hostMsg), buffer[0:n])
 			if readErr != nil {
 				log.Errorln("Error on read!", readErr)
 				if e, ok := readErr.(net.Error); !ok || !e.Timeout() {
