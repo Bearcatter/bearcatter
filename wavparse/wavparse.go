@@ -15,8 +15,6 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-
 	riff "github.com/go-audio/riff"
 )
 
@@ -281,15 +279,15 @@ func decodeUNIDChunk(ch *riff.Chunk) (*UnidenChunk, error) {
 
 		lat, latErr := strconv.ParseFloat(nullTermStr(split[26]), 10)
 		if latErr != nil {
-			log.WithError(latErr).Debugln("Unable to marshal latitude from UNID chunk!")
+			return nil, latErr
 		}
 		lon, lonErr := strconv.ParseFloat(nullTermStr(split[27]), 10)
 		if lonErr != nil {
-			log.WithError(lonErr).Debugln("Unable to marshal longitude from UNID chunk!")
+			return nil, lonErr
 		}
 		ran, ranErr := strconv.ParseFloat(nullTermStr(split[28]), 10)
 		if ranErr != nil {
-			log.WithError(ranErr).Debugln("Unable to marshal range from UNID chunk!")
+			return nil, ranErr
 		}
 
 		uid := int64(0)
@@ -299,7 +297,7 @@ func decodeUNIDChunk(ch *riff.Chunk) (*UnidenChunk, error) {
 		}
 
 		if uidErr != nil {
-			log.WithError(uidErr).Warnf("Unable to marshal Unit ID from UNID chunk! %#q\n", uidStr)
+			return nil, uidErr
 		}
 
 		bufHex := make([]byte, hex.EncodedLen(len(buf)))
@@ -313,7 +311,10 @@ func decodeUNIDChunk(ch *riff.Chunk) (*UnidenChunk, error) {
 			freq, freqErr = strconv.ParseFloat(fmt.Sprintf("%s.%s", freqHex[1][1:4], freqHex[1][4:]), 64)
 		}
 		if len(freqHex) == 0 || freqErr != nil {
-			log.Warnf("Unable to marshal Frequency from UNID chunk %#q! %v", freqHex, freqErr)
+			if freqErr == nil {
+				freqErr = fmt.Errorf("frequencey hex matches were empty")
+			}
+			return nil, freqErr
 		}
 
 		recUnidChunk = &UnidenChunk{
