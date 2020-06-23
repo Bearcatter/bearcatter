@@ -50,60 +50,60 @@ type FavoriteInfo struct {
 func (f *FavoriteInfo) UnmarshalBinary(data []byte) error {
 	split := strings.Split(string(data), "\x00")
 
-	if len(split) >= 1 {
+	if len(split) >= 1 && split[0] != "" {
 		f.Name = split[0]
 	}
-	if len(split) >= 2 {
+	if len(split) >= 2 && split[1] != "" {
 		f.File = split[1]
 	}
-	if len(split) >= 3 {
-		toggleBool, toggleBoolErr := parseBool(strings.ToLower(split[2]))
+	if len(split) >= 3 && split[2] != "" {
+		toggleBool, toggleBoolErr := parseBool(split[2])
 		if toggleBoolErr != nil {
-			return toggleBoolErr
+			return fmt.Errorf("error when parsing favorite location control toggle to bool: %v", toggleBoolErr)
 		}
 		f.LocationControl = toggleBool
 	}
-	if len(split) >= 4 {
-		toggleBool, toggleBoolErr := parseBool(strings.ToLower(split[3]))
+	if len(split) >= 4 && split[3] != "" {
+		toggleBool, toggleBoolErr := parseBool(split[3])
 		if toggleBoolErr != nil {
-			return toggleBoolErr
+			return fmt.Errorf("error when parsing favorite monitor toggle to bool: %v", toggleBoolErr)
 		}
 		f.Monitor = toggleBool
 	}
-	if len(split) >= 5 {
+	if len(split) >= 5 && split[4] != "" {
 		f.QuickKey = split[4]
 	}
-	if len(split) >= 6 {
+	if len(split) >= 6 && split[5] != "" {
 		f.NumberTag = split[5]
 	}
-	if len(split) >= 7 {
+	if len(split) >= 7 && split[6] != "" {
 		f.ConfigKey0 = split[6]
 	}
-	if len(split) >= 8 {
+	if len(split) >= 8 && split[7] != "" {
 		f.ConfigKey1 = split[7]
 	}
-	if len(split) >= 9 {
+	if len(split) >= 9 && split[8] != "" {
 		f.ConfigKey2 = split[8]
 	}
-	if len(split) >= 10 {
+	if len(split) >= 10 && split[9] != "" {
 		f.ConfigKey3 = split[9]
 	}
-	if len(split) >= 11 {
+	if len(split) >= 11 && split[10] != "" {
 		f.ConfigKey4 = split[10]
 	}
-	if len(split) >= 12 {
+	if len(split) >= 12 && split[11] != "" {
 		f.ConfigKey5 = split[11]
 	}
-	if len(split) >= 13 {
+	if len(split) >= 13 && split[12] != "" {
 		f.ConfigKey6 = split[12]
 	}
-	if len(split) >= 14 {
+	if len(split) >= 14 && split[13] != "" {
 		f.ConfigKey7 = split[13]
 	}
-	if len(split) >= 15 {
+	if len(split) >= 15 && split[14] != "" {
 		f.ConfigKey8 = split[14]
 	}
-	if len(split) >= 16 {
+	if len(split) >= 16 && split[15] != "" {
 		f.ConfigKey9 = split[15]
 	}
 
@@ -126,35 +126,55 @@ type SiteInfo struct {
 func (s *SiteInfo) UnmarshalBinary(data []byte) error {
 	split := strings.Split(string(data), "\x00")
 
-	if len(split) >= 1 {
+	if len(split) >= 1 && split[0] != "" {
 		s.Name = split[0]
 	}
-	if len(split) >= 2 {
-		s.Avoid, _ = parseBool(strings.ToLower(split[1]))
+	if len(split) >= 2 && split[1] != "" {
+		var parseErr error
+		s.Avoid, parseErr = parseBool(split[1])
+		if parseErr != nil {
+			return fmt.Errorf("error when parsing site avoid toggle to bool: %v", parseErr)
+		}
 	}
-	if len(split) >= 3 {
-		s.Latitude, _ = strconv.ParseFloat(split[2], 64)
+	if len(split) >= 3 && split[2] != "" {
+		var parseErr error
+		s.Latitude, parseErr = strconv.ParseFloat(split[2], 64)
+		if parseErr != nil {
+			return fmt.Errorf("error when parsing site latitude to float64: %v", parseErr)
+		}
 	}
-	if len(split) >= 4 {
-		s.Longitude, _ = strconv.ParseFloat(split[3], 64)
+	if len(split) >= 4 && split[3] != "" {
+		var parseErr error
+		s.Longitude, parseErr = strconv.ParseFloat(split[3], 64)
+		if parseErr != nil {
+			return fmt.Errorf("error when parsing site longitude to float64: %v", parseErr)
+		}
 	}
-	if len(split) >= 5 {
-		s.Range, _ = strconv.ParseFloat(split[4], 64)
+	if len(split) >= 5 && split[4] != "" {
+		var parseErr error
+		s.Range, parseErr = strconv.ParseFloat(split[4], 64)
+		if parseErr != nil {
+			return fmt.Errorf("error when parsing site range to float64: %v", parseErr)
+		}
 	}
-	if len(split) >= 6 {
+	if len(split) >= 6 && split[5] != "" {
 		s.Modulation = split[5]
 	}
-	if len(split) >= 7 {
+	if len(split) >= 7 && split[6] != "" {
 		s.MotorolaBandPlan = split[6]
 	}
-	if len(split) >= 8 {
+	if len(split) >= 8 && split[7] != "" {
 		s.EDACS = split[7]
 	}
-	if len(split) >= 9 {
+	if len(split) >= 9 && split[8] != "" {
 		s.Shape = split[8]
 	}
-	if len(split) >= 10 {
-		s.Attenuator, _ = parseBool(strings.ToLower(split[9]))
+	if len(split) >= 10 && split[9] != "" {
+		var parseErr error
+		s.Attenuator, parseErr = parseBool(split[9])
+		if parseErr != nil {
+			return fmt.Errorf("error when parsing site attenuator toggle to bool: %v", parseErr)
+		}
 	}
 	return nil
 }
@@ -165,7 +185,7 @@ type SystemInfo struct {
 	Blank                    string
 	Type                     string
 	IDSearch                 bool
-	EmergencyAlertType       bool
+	EmergencyAlertType       string
 	AlertVolume              string
 	MotorolaStatusBit        string
 	P25NAC                   string
@@ -183,58 +203,66 @@ type SystemInfo struct {
 func (s *SystemInfo) UnmarshalBinary(data []byte) error {
 	split := strings.Split(string(data), "\x00")
 
-	if len(split) >= 1 {
+	if len(split) >= 1 && split[0] != "" {
 		s.Name = split[0]
 	}
-	if len(split) >= 2 {
-		s.Avoid, _ = parseBool(strings.ToLower(split[1]))
+	if len(split) >= 2 && split[1] != "" {
+		var parseErr error
+		s.Avoid, parseErr = parseBool(split[1])
+		if parseErr != nil {
+			return fmt.Errorf("error when parsing system avoid toggle to bool: %v", parseErr)
+		}
 	}
-	if len(split) >= 3 {
+	if len(split) >= 3 && split[2] != "" {
 		s.Blank = split[2]
 	}
-	if len(split) >= 4 {
+	if len(split) >= 4 && split[3] != "" {
 		s.Type = split[3]
 	}
-	if len(split) >= 5 {
-		s.IDSearch, _ = parseBool(strings.ToLower(split[4]))
+	if len(split) >= 5 && split[4] != "" {
+		var parseErr error
+		s.IDSearch, parseErr = parseBool(split[4])
+		if parseErr != nil {
+			return fmt.Errorf("error when parsing system id search toggle to bool: %v", parseErr)
+		}
 	}
-	if len(split) >= 6 {
-		s.EmergencyAlertType, _ = parseBool(strings.ToLower(split[5]))
+	if len(split) >= 6 && split[5] != "" {
+		s.EmergencyAlertType = split[5]
 	}
-	if len(split) >= 7 {
+	if len(split) >= 7 && split[6] != "" {
 		s.AlertVolume = split[6]
 	}
-	if len(split) >= 8 {
+	if len(split) >= 8 && split[7] != "" {
 		s.MotorolaStatusBit = split[7]
 	}
-	if len(split) >= 9 {
+	if len(split) >= 9 && split[8] != "" {
 		s.P25NAC = split[8]
 	}
-	if len(split) >= 10 {
+	if len(split) >= 10 && split[9] != "" {
 		s.QuickKey = split[9]
 	}
-	if len(split) >= 11 {
+	if len(split) >= 11 && split[10] != "" {
 		s.NumberTag = split[10]
 	}
-	if len(split) >= 12 {
+	if len(split) >= 12 && split[11] != "" {
 		s.HoldTime = split[11]
 	}
-	if len(split) >= 13 {
+	if len(split) >= 13 && split[12] != "" {
 		s.AnalogAGC = split[12]
 	}
-	if len(split) >= 14 {
+	if len(split) >= 14 && split[13] != "" {
 		s.DigitalAGC = split[13]
 	}
-	if len(split) >= 15 {
+	if len(split) >= 15 && split[14] != "" {
 		s.EndCode = split[14]
 	}
-	if len(split) >= 16 {
+	if len(split) >= 16 && split[15] != "" {
 		s.PriorityID = split[15]
 	}
-	if len(split) >= 17 {
+	if len(split) >= 17 && split[17] != "" {
 		s.EmergencyAlertLightColor = split[16]
 	}
-	if len(split) >= 18 {
+	if len(split) >= 18 && split[18] != "" {
 		s.EmergencyAlertCondition = split[17]
 	}
 
@@ -254,25 +282,41 @@ type DepartmentInfo struct {
 func (d *DepartmentInfo) UnmarshalBinary(data []byte) error {
 	split := strings.Split(string(data), "\x00")
 
-	if len(split) >= 1 {
+	if len(split) >= 1 && split[0] != "" {
 		d.Name = split[0]
 	}
-	if len(split) >= 2 {
-		d.Avoid, _ = parseBool(strings.ToLower(split[1]))
+	if len(split) >= 2 && split[1] != "" {
+		var parseErr error
+		d.Avoid, parseErr = parseBool(split[1])
+		if parseErr != nil {
+			return fmt.Errorf("error when parsing department avoid toggle to bool: %v", parseErr)
+		}
 	}
-	if len(split) >= 3 {
-		d.Latitude, _ = strconv.ParseFloat(split[2], 64)
+	if len(split) >= 3 && split[2] != "" {
+		var parseErr error
+		d.Latitude, parseErr = strconv.ParseFloat(split[2], 64)
+		if parseErr != nil {
+			return fmt.Errorf("error when parsing department latitude to float64: %v", parseErr)
+		}
 	}
-	if len(split) >= 4 {
-		d.Longitude, _ = strconv.ParseFloat(split[3], 64)
+	if len(split) >= 4 && split[3] != "" {
+		var parseErr error
+		d.Longitude, parseErr = strconv.ParseFloat(split[3], 64)
+		if parseErr != nil {
+			return fmt.Errorf("error when parsing department longitude to float64: %v", parseErr)
+		}
 	}
-	if len(split) >= 5 {
-		d.Range, _ = strconv.ParseFloat(split[4], 64)
+	if len(split) >= 5 && split[4] != "" {
+		var parseErr error
+		d.Range, parseErr = strconv.ParseFloat(split[4], 64)
+		if parseErr != nil {
+			return fmt.Errorf("error when parsing department range to float64: %v", parseErr)
+		}
 	}
-	if len(split) >= 6 {
+	if len(split) >= 6 && split[5] != "" {
 		d.Shape = split[5]
 	}
-	if len(split) >= 7 {
+	if len(split) >= 7 && split[6] != "" {
 		d.NumberTag = split[6]
 	}
 
@@ -392,36 +436,43 @@ type ChannelInfo struct {
 	ToneCode        string
 	ServiceType     ServiceType
 	Attenuator      int // Conventional systems only
-	DelayValue      int
-	VolumeOffset    int
+	DelayValue      string
+	VolumeOffset    string
 	AlertToneType   string
 	AlertToneVolume string
 	AlertLightColor string
 	AlertLightType  string
 	NumberTag       string
-	Priority        bool
+	Priority        string
 }
 
 func (c *ChannelInfo) UnmarshalBinary(data []byte) error {
 	split := strings.Split(string(data), "\x00")
 
-	if len(split) >= 1 {
+	if len(split) >= 1 && split[0] != "" {
 		c.Name = split[0]
 	}
-	if len(split) >= 2 {
-		c.Avoid, _ = parseBool(strings.ToLower(split[1]))
+	if len(split) >= 2 && split[1] != "" {
+		var parseErr error
+		c.Avoid, parseErr = parseBool(split[1])
+		if parseErr != nil {
+			return fmt.Errorf("error when parsing channel avoid toggle to bool: %v", parseErr)
+		}
 	}
-	if len(split) >= 3 {
+	if len(split) >= 3 && split[2] != "" {
 		c.TGIDFrequency = split[2]
 	}
-	if len(split) >= 4 {
+	if len(split) >= 4 && split[3] != "" {
 		c.Mode = split[3]
 	}
-	if len(split) >= 5 {
+	if len(split) >= 5 && split[4] != "" {
 		c.ToneCode = split[4]
 	}
-	if len(split) >= 6 {
-		parsed, _ := strconv.ParseInt(split[5], 10, 32)
+	if len(split) >= 6 && split[5] != "" {
+		parsed, parseErr := strconv.ParseInt(split[5], 10, 32)
+		if parseErr != nil {
+			return fmt.Errorf("error when parsing channel service type to int: %v", parseErr)
+		}
 		c.ServiceType = ServiceType(parsed)
 	}
 
@@ -429,37 +480,38 @@ func (c *ChannelInfo) UnmarshalBinary(data []byte) error {
 
 	if len(split) > 15 { // Conventional systems have one extra channel field, Attenuator
 		conventionalOffset = 1
-		if len(split) >= 7 {
-			parsed, _ := strconv.ParseInt(split[6], 10, 32)
+		if len(split) >= 7 && split[6] != "" {
+			parsed, parseErr := strconv.ParseInt(split[6], 10, 32)
+			if parseErr != nil {
+				return fmt.Errorf("error when parsing channel attenuator to int: %v", parseErr)
+			}
 			c.Attenuator = int(parsed)
 		}
 	}
 
-	if len(split) >= 7 {
-		parsed, _ := strconv.ParseInt(split[conventionalOffset+6], 10, 32)
-		c.DelayValue = int(parsed)
+	if len(split) >= 7 && split[6] != "" {
+		c.DelayValue = split[conventionalOffset+6]
 	}
-	if len(split) >= 8 {
-		parsed, _ := strconv.ParseInt(split[conventionalOffset+7], 10, 32)
-		c.VolumeOffset = int(parsed)
+	if len(split) >= 8 && split[7] != "" {
+		c.VolumeOffset = split[conventionalOffset+7]
 	}
-	if len(split) >= 9 {
+	if len(split) >= 9 && split[8] != "" {
 		c.AlertToneType = split[conventionalOffset+8]
 	}
-	if len(split) >= 10 {
+	if len(split) >= 10 && split[9] != "" {
 		c.AlertToneVolume = split[conventionalOffset+9]
 	}
-	if len(split) >= 11 {
+	if len(split) >= 11 && split[10] != "" {
 		c.AlertLightColor = split[conventionalOffset+10]
 	}
-	if len(split) >= 12 {
+	if len(split) >= 12 && split[11] != "" {
 		c.AlertLightType = split[conventionalOffset+11]
 	}
-	if len(split) >= 13 {
+	if len(split) >= 13 && split[12] != "" {
 		c.NumberTag = split[conventionalOffset+12]
 	}
-	if len(split) >= 14 {
-		c.Priority, _ = parseBool(strings.ToLower(split[conventionalOffset+13]))
+	if len(split) >= 14 && split[13] != "" {
+		c.Priority = split[conventionalOffset+13]
 	}
 
 	return nil
@@ -504,11 +556,18 @@ func (t *Metadata) UnmarshalBinary(data []byte) error {
 	if len(fmtChunkSplit) >= 3 {
 		t.FrequencyFmt = fmtChunkSplit[2]
 
-		t.RawFrequency = fmt.Sprintf(t.FrequencyFmt, data[68:70], data[70:72])
+		if t.FrequencyFmt != "" {
+			t.RawFrequency = fmt.Sprintf(t.FrequencyFmt, data[68:70], data[70:72])
 
-		t.RawFrequency = strings.TrimLeft(t.RawFrequency, "0")
+			t.RawFrequency = strings.TrimLeft(t.RawFrequency, "0")
 
-		t.Frequency, _ = strconv.ParseFloat(strings.Split(t.RawFrequency, " ")[0], 64)
+			var parseErr error
+			t.Frequency, parseErr = strconv.ParseFloat(strings.Split(t.RawFrequency, " ")[0], 64)
+			if parseErr != nil {
+				fmt.Printf("fmt %#q\n", t.FrequencyFmt)
+				return fmt.Errorf("error when parsing metadata raw frequency to float64: %v", parseErr)
+			}
+		}
 	}
 
 	if len(fmtChunkSplit) >= 4 {

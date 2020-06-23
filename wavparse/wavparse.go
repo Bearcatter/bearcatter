@@ -124,13 +124,13 @@ func decodeLISTChunk(ch *riff.Chunk) (*ListChunk, error) {
 		buf := make([]byte, ch.Size)
 		var err error
 		if _, err = ch.Read(buf); err != nil {
-			return recListChunk, fmt.Errorf("failed to read the LIST chunk - %v", err)
+			return recListChunk, fmt.Errorf("failed to read the LIST chunk: %v", err)
 		}
 		r := bytes.NewReader(buf)
 		// INFO subchunk
 		scratch := make([]byte, 4)
 		if _, err = r.Read(scratch); err != nil {
-			return recListChunk, fmt.Errorf("failed to read the INFO subchunk - %v", err)
+			return recListChunk, fmt.Errorf("failed to read the INFO subchunk: %v", err)
 		}
 		if !bytes.Equal(scratch, cidINFO[:]) {
 			// "expected an INFO subchunk but got %s", string(scratch)
@@ -146,7 +146,7 @@ func decodeLISTChunk(ch *riff.Chunk) (*ListChunk, error) {
 		)
 		readSubHeader := func() error {
 			if err := binary.Read(r, binary.BigEndian, &id); err != nil {
-				return err
+				return fmt.Errorf("error when reading riff list chunk id header: %v", err)
 			}
 			return binary.Read(r, binary.LittleEndian, &size)
 		}
@@ -176,7 +176,7 @@ func decodeLISTChunk(ch *riff.Chunk) (*ListChunk, error) {
 			case markerICRD:
 				ts, tsErr := time.Parse(timestampFormat, nullTermStr(scratch))
 				if tsErr != nil {
-					return nil, tsErr
+					return nil, fmt.Errorf("error when parsing timestamp from riff list chunk: %v", tsErr)
 				}
 
 				recListChunk.Timestamp = &ts
