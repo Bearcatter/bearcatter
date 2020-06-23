@@ -139,8 +139,6 @@ func testEquality(parsed Recording, expected WavPlayerEntry) func(t *testing.T) 
 
 		assert.Equal(expected.FileName, parsed.File, "File names should be equal to expected")
 
-		// assert.Equal(expected.Duration.Duration, parsed.Duration, "Duration should be equal to expected")
-
 		if expected.Product != "" {
 			assert.Equal(expected.Product, parsed.Public.Product, "Products (public) should be equal to expected")
 		}
