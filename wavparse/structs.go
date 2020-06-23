@@ -8,43 +8,42 @@ import (
 )
 
 type Recording struct {
-	File     string
-	Public   *ListChunk
-	Private  *UnidenChunk
-	Duration time.Duration
+	File     string        `json:",omitempty"`
+	Public   *ListChunk    `json:",omitempty"`
+	Private  *UnidenChunk  `json:",omitempty"`
+	Duration time.Duration `json:",omitempty"`
 }
-
 type ListChunk struct {
-	System           string     // IART
-	Department       string     // IGNR
-	Channel          string     // INAM
-	TGIDFreq         string     // ICMT
-	Product          string     // IPRD
-	Unknown          string     // IKEY
-	Timestamp        *time.Time // ICRD
-	Tone             string     // ISRC
-	UnitID           string     // ITCH
-	FavoriteListName string     // ISBJ
-	Reserved         string     // ICOP
+	System           string     `json:",omitempty"` // IART
+	Department       string     `json:",omitempty"` // IGNR
+	Channel          string     `json:",omitempty"` // INAM
+	TGIDFreq         string     `json:",omitempty"` // ICMT
+	Product          string     `json:",omitempty"` // IPRD
+	Unknown          string     `json:",omitempty"` // IKEY
+	Timestamp        *time.Time `json:",omitempty"` // ICRD
+	Tone             string     `json:",omitempty"` // ISRC
+	UnitID           string     `json:",omitempty"` // ITCH
+	FavoriteListName string     `json:",omitempty"` // ISBJ
+	Reserved         string     `json:",omitempty"` // ICOP
 }
 
 type FavoriteInfo struct {
-	Name            string
-	File            string
+	Name            string `json:",omitempty"`
+	File            string `json:",omitempty"`
 	LocationControl bool
 	Monitor         bool
-	QuickKey        string
-	NumberTag       string
-	ConfigKey0      string
-	ConfigKey1      string
-	ConfigKey2      string
-	ConfigKey3      string
-	ConfigKey4      string
-	ConfigKey5      string
-	ConfigKey6      string
-	ConfigKey7      string
-	ConfigKey8      string
-	ConfigKey9      string
+	QuickKey        string `json:",omitempty"`
+	NumberTag       string `json:",omitempty"`
+	ConfigKey0      string `json:",omitempty"`
+	ConfigKey1      string `json:",omitempty"`
+	ConfigKey2      string `json:",omitempty"`
+	ConfigKey3      string `json:",omitempty"`
+	ConfigKey4      string `json:",omitempty"`
+	ConfigKey5      string `json:",omitempty"`
+	ConfigKey6      string `json:",omitempty"`
+	ConfigKey7      string `json:",omitempty"`
+	ConfigKey8      string `json:",omitempty"`
+	ConfigKey9      string `json:",omitempty"`
 }
 
 func (f *FavoriteInfo) UnmarshalBinary(data []byte) error {
@@ -111,15 +110,15 @@ func (f *FavoriteInfo) UnmarshalBinary(data []byte) error {
 }
 
 type SiteInfo struct {
-	Name             string
+	Name             string `json:",omitempty"`
 	Avoid            bool
 	Latitude         float64
 	Longitude        float64
 	Range            float64
-	Modulation       string
-	MotorolaBandPlan string
-	EDACS            string
-	Shape            string
+	Modulation       string `json:",omitempty"`
+	MotorolaBandPlan string `json:",omitempty"`
+	EDACS            string `json:",omitempty"`
+	Shape            string `json:",omitempty"`
 	Attenuator       bool
 }
 
@@ -180,24 +179,24 @@ func (s *SiteInfo) UnmarshalBinary(data []byte) error {
 }
 
 type SystemInfo struct {
-	Name                     string
+	Name                     string `json:",omitempty"`
 	Avoid                    bool
-	Blank                    string
-	Type                     string
+	Blank                    string `json:",omitempty"`
+	Type                     string `json:",omitempty"`
 	IDSearch                 bool
-	EmergencyAlertType       string
-	AlertVolume              string
-	MotorolaStatusBit        string
-	P25NAC                   string
-	QuickKey                 string
-	NumberTag                string
-	HoldTime                 string
-	AnalogAGC                string
-	DigitalAGC               string
-	EndCode                  string
-	PriorityID               string
-	EmergencyAlertLightColor string
-	EmergencyAlertCondition  string
+	EmergencyAlertType       string `json:",omitempty"`
+	AlertVolume              string `json:",omitempty"`
+	MotorolaStatusBit        string `json:",omitempty"`
+	P25NAC                   string `json:",omitempty"`
+	QuickKey                 string `json:",omitempty"`
+	NumberTag                string `json:",omitempty"`
+	HoldTime                 string `json:",omitempty"`
+	AnalogAGC                string `json:",omitempty"`
+	DigitalAGC               string `json:",omitempty"`
+	EndCode                  string `json:",omitempty"`
+	PriorityID               string `json:",omitempty"`
+	EmergencyAlertLightColor string `json:",omitempty"`
+	EmergencyAlertCondition  string `json:",omitempty"`
 }
 
 func (s *SystemInfo) UnmarshalBinary(data []byte) error {
@@ -270,13 +269,13 @@ func (s *SystemInfo) UnmarshalBinary(data []byte) error {
 }
 
 type DepartmentInfo struct {
-	Name      string
+	Name      string `json:",omitempty"`
 	Avoid     bool
 	Latitude  float64
 	Longitude float64
 	Range     float64
-	Shape     string
-	NumberTag string
+	Shape     string `json:",omitempty"`
+	NumberTag string `json:",omitempty"`
 }
 
 func (d *DepartmentInfo) UnmarshalBinary(data []byte) error {
@@ -429,21 +428,21 @@ func (s ServiceType) String() string {
 }
 
 type ChannelInfo struct {
-	Name            string
+	Name            string `json:",omitempty"`
 	Avoid           bool
-	TGIDFrequency   string
-	Mode            string
-	ToneCode        string
+	TGIDFrequency   string `json:",omitempty"`
+	Mode            string `json:",omitempty"`
+	ToneCode        string `json:",omitempty"`
 	ServiceType     ServiceType
-	Attenuator      int // Conventional systems only
-	DelayValue      string
-	VolumeOffset    string
-	AlertToneType   string
-	AlertToneVolume string
-	AlertLightColor string
-	AlertLightType  string
-	NumberTag       string
-	Priority        string
+	Attenuator      int    // Conventional systems only
+	DelayValue      string `json:",omitempty"`
+	VolumeOffset    string `json:",omitempty"`
+	AlertToneType   string `json:",omitempty"`
+	AlertToneVolume string `json:",omitempty"`
+	AlertLightColor string `json:",omitempty"`
+	AlertLightType  string `json:",omitempty"`
+	NumberTag       string `json:",omitempty"`
+	Priority        string `json:",omitempty"`
 }
 
 func (c *ChannelInfo) UnmarshalBinary(data []byte) error {
@@ -518,22 +517,22 @@ func (c *ChannelInfo) UnmarshalBinary(data []byte) error {
 }
 
 type Metadata struct {
-	TGID      string
+	TGID      string `json:",omitempty"`
 	Frequency float64
-	WACN      string
-	NAC       string
-	UnitID    string
+	WACN      string `json:",omitempty"`
+	NAC       string `json:",omitempty"`
+	UnitID    string `json:",omitempty"`
 
-	RawTGID      string
-	RawFrequency string
-	RawWACN      string
-	RawNAC       string
-	RawUnitID    string
+	RawTGID      string `json:",omitempty"`
+	RawFrequency string `json:",omitempty"`
+	RawWACN      string `json:",omitempty"`
+	RawNAC       string `json:",omitempty"`
+	RawUnitID    string `json:",omitempty"`
 
-	FrequencyFmt string
-	WACNFmt      string
-	UnknownFmt   string
-	NACFmt       string
+	FrequencyFmt string `json:",omitempty"`
+	WACNFmt      string `json:",omitempty"`
+	UnknownFmt   string `json:",omitempty"`
+	NACFmt       string `json:",omitempty"`
 }
 
 func (t *Metadata) UnmarshalBinary(data []byte) error {
