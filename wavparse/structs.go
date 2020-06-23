@@ -63,14 +63,14 @@ func (f *FavoriteInfo) UnmarshalBinary(data []byte) error {
 	if len(split) >= 3 && split[2] != "" {
 		toggleBool, toggleBoolErr := parseBool(split[2])
 		if toggleBoolErr != nil {
-			return fmt.Errorf("error when parsing favorite location control toggle to bool: %v", toggleBoolErr)
+			return fmt.Errorf("error when parsing favorite location control toggle to bool: %w", toggleBoolErr)
 		}
 		f.LocationControl = toggleBool
 	}
 	if len(split) >= 4 && split[3] != "" {
 		toggleBool, toggleBoolErr := parseBool(split[3])
 		if toggleBoolErr != nil {
-			return fmt.Errorf("error when parsing favorite monitor toggle to bool: %v", toggleBoolErr)
+			return fmt.Errorf("error when parsing favorite monitor toggle to bool: %w", toggleBoolErr)
 		}
 		f.Monitor = toggleBool
 	}
@@ -141,28 +141,28 @@ func (s *SiteInfo) UnmarshalBinary(data []byte) error {
 		var parseErr error
 		s.Avoid, parseErr = parseBool(split[1])
 		if parseErr != nil {
-			return fmt.Errorf("error when parsing site avoid toggle to bool: %v", parseErr)
+			return fmt.Errorf("error when parsing site avoid toggle to bool: %w", parseErr)
 		}
 	}
 	if len(split) >= 3 && split[2] != "" {
 		var parseErr error
 		s.Latitude, parseErr = strconv.ParseFloat(split[2], 64)
 		if parseErr != nil {
-			return fmt.Errorf("error when parsing site latitude to float64: %v", parseErr)
+			return fmt.Errorf("error when parsing site latitude to float64: %w", parseErr)
 		}
 	}
 	if len(split) >= 4 && split[3] != "" {
 		var parseErr error
 		s.Longitude, parseErr = strconv.ParseFloat(split[3], 64)
 		if parseErr != nil {
-			return fmt.Errorf("error when parsing site longitude to float64: %v", parseErr)
+			return fmt.Errorf("error when parsing site longitude to float64: %w", parseErr)
 		}
 	}
 	if len(split) >= 5 && split[4] != "" {
 		var parseErr error
 		s.Range, parseErr = strconv.ParseFloat(split[4], 64)
 		if parseErr != nil {
-			return fmt.Errorf("error when parsing site range to float64: %v", parseErr)
+			return fmt.Errorf("error when parsing site range to float64: %w", parseErr)
 		}
 	}
 	if len(split) >= 6 && split[5] != "" {
@@ -181,7 +181,7 @@ func (s *SiteInfo) UnmarshalBinary(data []byte) error {
 		var parseErr error
 		s.Attenuator, parseErr = parseBool(split[9])
 		if parseErr != nil {
-			return fmt.Errorf("error when parsing site attenuator toggle to bool: %v", parseErr)
+			return fmt.Errorf("error when parsing site attenuator toggle to bool: %w", parseErr)
 		}
 	}
 	return nil
@@ -222,7 +222,7 @@ func (s *SystemInfo) UnmarshalBinary(data []byte) error {
 		var parseErr error
 		s.Avoid, parseErr = parseBool(split[1])
 		if parseErr != nil {
-			return fmt.Errorf("error when parsing system avoid toggle to bool: %v", parseErr)
+			return fmt.Errorf("error when parsing system avoid toggle to bool: %w", parseErr)
 		}
 	}
 	if len(split) >= 3 && split[2] != "" {
@@ -235,7 +235,7 @@ func (s *SystemInfo) UnmarshalBinary(data []byte) error {
 		var parseErr error
 		s.IDSearch, parseErr = parseBool(split[4])
 		if parseErr != nil {
-			return fmt.Errorf("error when parsing system id search toggle to bool: %v", parseErr)
+			return fmt.Errorf("error when parsing system id search toggle to bool: %w", parseErr)
 		}
 	}
 	if len(split) >= 6 && split[5] != "" {
@@ -305,28 +305,28 @@ func (d *DepartmentInfo) UnmarshalBinary(data []byte) error {
 		var parseErr error
 		d.Avoid, parseErr = parseBool(split[1])
 		if parseErr != nil {
-			return fmt.Errorf("error when parsing department avoid toggle to bool: %v", parseErr)
+			return fmt.Errorf("error when parsing department avoid toggle to bool: %w", parseErr)
 		}
 	}
 	if len(split) >= 3 && split[2] != "" {
 		var parseErr error
 		d.Latitude, parseErr = strconv.ParseFloat(split[2], 64)
 		if parseErr != nil {
-			return fmt.Errorf("error when parsing department latitude to float64: %v", parseErr)
+			return fmt.Errorf("error when parsing department latitude to float64: %w", parseErr)
 		}
 	}
 	if len(split) >= 4 && split[3] != "" {
 		var parseErr error
 		d.Longitude, parseErr = strconv.ParseFloat(split[3], 64)
 		if parseErr != nil {
-			return fmt.Errorf("error when parsing department longitude to float64: %v", parseErr)
+			return fmt.Errorf("error when parsing department longitude to float64: %w", parseErr)
 		}
 	}
 	if len(split) >= 5 && split[4] != "" {
 		var parseErr error
 		d.Range, parseErr = strconv.ParseFloat(split[4], 64)
 		if parseErr != nil {
-			return fmt.Errorf("error when parsing department range to float64: %v", parseErr)
+			return fmt.Errorf("error when parsing department range to float64: %w", parseErr)
 		}
 	}
 	if len(split) >= 6 && split[5] != "" {
@@ -476,7 +476,7 @@ func (c *ChannelInfo) UnmarshalBinary(data []byte) error {
 		var parseErr error
 		c.Avoid, parseErr = parseBool(split[1])
 		if parseErr != nil {
-			return fmt.Errorf("error when parsing channel avoid toggle to bool: %v", parseErr)
+			return fmt.Errorf("error when parsing channel avoid toggle to bool: %w", parseErr)
 		}
 	}
 	if len(split) >= 3 && split[2] != "" {
@@ -491,7 +491,7 @@ func (c *ChannelInfo) UnmarshalBinary(data []byte) error {
 	if len(split) >= 6 && split[5] != "" {
 		parsed, parseErr := strconv.ParseInt(split[5], 10, 32)
 		if parseErr != nil {
-			return fmt.Errorf("error when parsing channel service type to int: %v", parseErr)
+			return fmt.Errorf("error when parsing channel service type to int: %w", parseErr)
 		}
 		c.ServiceType = ServiceType(parsed)
 	}
@@ -503,7 +503,7 @@ func (c *ChannelInfo) UnmarshalBinary(data []byte) error {
 		if len(split) >= 7 && split[6] != "" {
 			parsed, parseErr := strconv.ParseInt(split[6], 10, 32)
 			if parseErr != nil {
-				return fmt.Errorf("error when parsing channel attenuator to int: %v", parseErr)
+				return fmt.Errorf("error when parsing channel attenuator to int: %w", parseErr)
 			}
 			c.Attenuator = int(parsed)
 		}
@@ -584,7 +584,7 @@ func (t *Metadata) UnmarshalBinary(data []byte) error {
 			var parseErr error
 			t.Frequency, parseErr = strconv.ParseFloat(strings.Split(t.RawFrequency, " ")[0], 64)
 			if parseErr != nil {
-				return fmt.Errorf("error when parsing metadata raw frequency to float64: %v", parseErr)
+				return fmt.Errorf("error when parsing metadata raw frequency to float64: %w", parseErr)
 			}
 		}
 	}
