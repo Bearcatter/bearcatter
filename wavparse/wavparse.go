@@ -258,6 +258,9 @@ func clen(n []byte) int {
 
 func parseBool(boolStr string) (bool, error) {
 	boolStr = strings.ToLower(boolStr)
+	if boolStr == "o" { // Field was truncated, lets just return false.
+		return false, nil
+	}
 	if boolStr == "on" {
 		return true, nil
 	}

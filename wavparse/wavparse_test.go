@@ -17,7 +17,7 @@ type WavPlayerTime struct {
 	time.Time
 }
 
-const wavPlayerTimeFormat = "1/02/2006 03:04:05 PM"
+const wavPlayerTimeFormat = "1/02/2006 3:04:05 PM"
 
 // Convert the internal date as CSV string
 func (date *WavPlayerTime) MarshalCSV() (string, error) {
@@ -71,7 +71,7 @@ type WavPlayerEntry struct {
 func TestDecodeRecording(t *testing.T) {
 	testCaseFile, openErr := os.OpenFile("fixtures.csv", os.O_RDWR|os.O_CREATE, os.ModePerm)
 	if openErr != nil {
-		panic(openErr)
+		t.Fatalf("error when opening csv containing testcases: %v", openErr)
 	}
 	defer testCaseFile.Close()
 
@@ -84,7 +84,7 @@ func TestDecodeRecording(t *testing.T) {
 	})
 
 	if unmarshalErr := gocsv.UnmarshalFile(testCaseFile, &testCases); unmarshalErr != nil { // Load WavPlayerEntry from file
-		panic(unmarshalErr)
+		t.Fatalf("error when unmarshalling csv containing testcases: %v", unmarshalErr)
 	}
 
 	for _, testCase := range testCases {
@@ -92,10 +92,6 @@ func TestDecodeRecording(t *testing.T) {
 			t.Fatal("Refusing to run a nil fixture")
 			continue
 		}
-
-		// if testCase.FileName != "2020-06-21_12-15-58.wav" {
-		// 	continue
-		// }
 
 		t.Run(testCase.FileName, testDecode(fmt.Sprintf("fixtures/%s", testCase.FileName), *testCase))
 	}
