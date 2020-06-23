@@ -1,6 +1,7 @@
 package wavparse
 
 import (
+	"bytes"
 	"fmt"
 	"strconv"
 	"strings"
@@ -8,46 +9,50 @@ import (
 )
 
 type Recording struct {
-	File     string        `json:",omitempty"`
+	File     string        `json:",omitempty" validate:"omitempty,printascii"`
 	Public   *ListChunk    `json:",omitempty"`
 	Private  *UnidenChunk  `json:",omitempty"`
 	Duration time.Duration `json:",omitempty"`
 }
 type ListChunk struct {
-	System           string     `json:",omitempty"` // IART
-	Department       string     `json:",omitempty"` // IGNR
-	Channel          string     `json:",omitempty"` // INAM
-	TGIDFreq         string     `json:",omitempty"` // ICMT
-	Product          string     `json:",omitempty"` // IPRD
-	Unknown          string     `json:",omitempty"` // IKEY
-	Timestamp        *time.Time `json:",omitempty"` // ICRD
-	Tone             string     `json:",omitempty"` // ISRC
-	UnitID           string     `json:",omitempty"` // ITCH
-	FavoriteListName string     `json:",omitempty"` // ISBJ
-	Reserved         string     `json:",omitempty"` // ICOP
+	System           string     `json:",omitempty" validate:"omitempty,printascii"` // IART
+	Department       string     `json:",omitempty" validate:"omitempty,printascii"` // IGNR
+	Channel          string     `json:",omitempty" validate:"omitempty,printascii"` // INAM
+	TGIDFreq         string     `json:",omitempty" validate:"omitempty,printascii"` // ICMT
+	Product          string     `json:",omitempty" validate:"omitempty,printascii"` // IPRD
+	Unknown          string     `json:",omitempty" validate:"omitempty,printascii"` // IKEY
+	Timestamp        *time.Time `json:",omitempty" validate:"omitempty,printascii"` // ICRD
+	Tone             string     `json:",omitempty" validate:"omitempty,printascii"` // ISRC
+	UnitID           string     `json:",omitempty" validate:"omitempty,printascii"` // ITCH
+	FavoriteListName string     `json:",omitempty" validate:"omitempty,printascii"` // ISBJ
+	Reserved         string     `json:",omitempty" validate:"omitempty,printascii"` // ICOP
 }
 
 type FavoriteInfo struct {
-	Name            string `json:",omitempty"`
-	File            string `json:",omitempty"`
+	Name            string `json:",omitempty" validate:"omitempty,printascii"`
+	File            string `json:",omitempty" validate:"omitempty,printascii"`
 	LocationControl bool
 	Monitor         bool
-	QuickKey        string `json:",omitempty"`
-	NumberTag       string `json:",omitempty"`
-	ConfigKey0      string `json:",omitempty"`
-	ConfigKey1      string `json:",omitempty"`
-	ConfigKey2      string `json:",omitempty"`
-	ConfigKey3      string `json:",omitempty"`
-	ConfigKey4      string `json:",omitempty"`
-	ConfigKey5      string `json:",omitempty"`
-	ConfigKey6      string `json:",omitempty"`
-	ConfigKey7      string `json:",omitempty"`
-	ConfigKey8      string `json:",omitempty"`
-	ConfigKey9      string `json:",omitempty"`
+	QuickKey        string `json:",omitempty" validate:"omitempty,printascii"`
+	NumberTag       string `json:",omitempty" validate:"omitempty,printascii"`
+	ConfigKey0      string `json:",omitempty" validate:"omitempty,printascii"`
+	ConfigKey1      string `json:",omitempty" validate:"omitempty,printascii"`
+	ConfigKey2      string `json:",omitempty" validate:"omitempty,printascii"`
+	ConfigKey3      string `json:",omitempty" validate:"omitempty,printascii"`
+	ConfigKey4      string `json:",omitempty" validate:"omitempty,printascii"`
+	ConfigKey5      string `json:",omitempty" validate:"omitempty,printascii"`
+	ConfigKey6      string `json:",omitempty" validate:"omitempty,printascii"`
+	ConfigKey7      string `json:",omitempty" validate:"omitempty,printascii"`
+	ConfigKey8      string `json:",omitempty" validate:"omitempty,printascii"`
+	ConfigKey9      string `json:",omitempty" validate:"omitempty,printascii"`
 }
 
 func (f *FavoriteInfo) UnmarshalBinary(data []byte) error {
-	split := strings.Split(string(data), "\x00")
+	nIndex := bytes.Index(data, []byte("\n"))
+	if nIndex == -1 {
+		nIndex = len(data) - 1
+	}
+	split := strings.Split(string(data[0:nIndex]), "\x00")
 
 	if len(split) >= 1 && split[0] != "" {
 		f.Name = split[0]
@@ -110,20 +115,24 @@ func (f *FavoriteInfo) UnmarshalBinary(data []byte) error {
 }
 
 type SiteInfo struct {
-	Name             string `json:",omitempty"`
+	Name             string `json:",omitempty" validate:"omitempty,printascii"`
 	Avoid            bool
-	Latitude         float64
-	Longitude        float64
+	Latitude         float64 `validate:"latitude"`
+	Longitude        float64 `validate:"longitude"`
 	Range            float64
-	Modulation       string `json:",omitempty"`
-	MotorolaBandPlan string `json:",omitempty"`
-	EDACS            string `json:",omitempty"`
-	Shape            string `json:",omitempty"`
+	Modulation       string `json:",omitempty" validate:"omitempty,printascii"`
+	MotorolaBandPlan string `json:",omitempty" validate:"omitempty,printascii"`
+	EDACS            string `json:",omitempty" validate:"omitempty,printascii"`
+	Shape            string `json:",omitempty" validate:"omitempty,printascii"`
 	Attenuator       bool
 }
 
 func (s *SiteInfo) UnmarshalBinary(data []byte) error {
-	split := strings.Split(string(data), "\x00")
+	nIndex := bytes.Index(data, []byte("\n"))
+	if nIndex == -1 {
+		nIndex = len(data) - 1
+	}
+	split := strings.Split(string(data[0:nIndex]), "\x00")
 
 	if len(split) >= 1 && split[0] != "" {
 		s.Name = split[0]
@@ -179,28 +188,32 @@ func (s *SiteInfo) UnmarshalBinary(data []byte) error {
 }
 
 type SystemInfo struct {
-	Name                     string `json:",omitempty"`
+	Name                     string `json:",omitempty" validate:"omitempty,printascii"`
 	Avoid                    bool
-	Blank                    string `json:",omitempty"`
-	Type                     string `json:",omitempty"`
+	Blank                    string `json:",omitempty" validate:"omitempty,printascii"`
+	Type                     string `json:",omitempty" validate:"omitempty,printascii"`
 	IDSearch                 bool
-	EmergencyAlertType       string `json:",omitempty"`
-	AlertVolume              string `json:",omitempty"`
-	MotorolaStatusBit        string `json:",omitempty"`
-	P25NAC                   string `json:",omitempty"`
-	QuickKey                 string `json:",omitempty"`
-	NumberTag                string `json:",omitempty"`
-	HoldTime                 string `json:",omitempty"`
-	AnalogAGC                string `json:",omitempty"`
-	DigitalAGC               string `json:",omitempty"`
-	EndCode                  string `json:",omitempty"`
-	PriorityID               string `json:",omitempty"`
-	EmergencyAlertLightColor string `json:",omitempty"`
-	EmergencyAlertCondition  string `json:",omitempty"`
+	EmergencyAlertType       string `json:",omitempty" validate:"omitempty,printascii"`
+	AlertVolume              string `json:",omitempty" validate:"omitempty,printascii"`
+	MotorolaStatusBit        string `json:",omitempty" validate:"omitempty,printascii"`
+	P25NAC                   string `json:",omitempty" validate:"omitempty,printascii"`
+	QuickKey                 string `json:",omitempty" validate:"omitempty,printascii"`
+	NumberTag                string `json:",omitempty" validate:"omitempty,printascii"`
+	HoldTime                 string `json:",omitempty" validate:"omitempty,printascii"`
+	AnalogAGC                string `json:",omitempty" validate:"omitempty,printascii"`
+	DigitalAGC               string `json:",omitempty" validate:"omitempty,printascii"`
+	EndCode                  string `json:",omitempty" validate:"omitempty,printascii"`
+	PriorityID               string `json:",omitempty" validate:"omitempty,printascii"`
+	EmergencyAlertLightColor string `json:",omitempty" validate:"omitempty,printascii"`
+	EmergencyAlertCondition  string `json:",omitempty" validate:"omitempty,printascii"`
 }
 
 func (s *SystemInfo) UnmarshalBinary(data []byte) error {
-	split := strings.Split(string(data), "\x00")
+	nIndex := bytes.Index(data, []byte("\n"))
+	if nIndex == -1 {
+		nIndex = len(data) - 1
+	}
+	split := strings.Split(string(data[0:nIndex]), "\x00")
 
 	if len(split) >= 1 && split[0] != "" {
 		s.Name = split[0]
@@ -269,17 +282,21 @@ func (s *SystemInfo) UnmarshalBinary(data []byte) error {
 }
 
 type DepartmentInfo struct {
-	Name      string `json:",omitempty"`
+	Name      string `json:",omitempty" validate:"omitempty,printascii"`
 	Avoid     bool
-	Latitude  float64
-	Longitude float64
+	Latitude  float64 `validate:"latitude"`
+	Longitude float64 `validate:"longitude"`
 	Range     float64
-	Shape     string `json:",omitempty"`
-	NumberTag string `json:",omitempty"`
+	Shape     string `json:",omitempty" validate:"omitempty,printascii"`
+	NumberTag string `json:",omitempty" validate:"omitempty,printascii"`
 }
 
 func (d *DepartmentInfo) UnmarshalBinary(data []byte) error {
-	split := strings.Split(string(data), "\x00")
+	nIndex := bytes.Index(data, []byte("\n"))
+	if nIndex == -1 {
+		nIndex = len(data) - 1
+	}
+	split := strings.Split(string(data[0:nIndex]), "\x00")
 
 	if len(split) >= 1 && split[0] != "" {
 		d.Name = split[0]
@@ -428,25 +445,29 @@ func (s ServiceType) String() string {
 }
 
 type ChannelInfo struct {
-	Name            string `json:",omitempty"`
+	Name            string `json:",omitempty" validate:"omitempty,printascii"`
 	Avoid           bool
-	TGIDFrequency   string `json:",omitempty"`
-	Mode            string `json:",omitempty"`
-	ToneCode        string `json:",omitempty"`
+	TGIDFrequency   string `json:",omitempty" validate:"omitempty,printascii"`
+	Mode            string `json:",omitempty" validate:"omitempty,printascii"`
+	ToneCode        string `json:",omitempty" validate:"omitempty,printascii"`
 	ServiceType     ServiceType
 	Attenuator      int    // Conventional systems only
-	DelayValue      string `json:",omitempty"`
-	VolumeOffset    string `json:",omitempty"`
-	AlertToneType   string `json:",omitempty"`
-	AlertToneVolume string `json:",omitempty"`
-	AlertLightColor string `json:",omitempty"`
-	AlertLightType  string `json:",omitempty"`
-	NumberTag       string `json:",omitempty"`
-	Priority        string `json:",omitempty"`
+	DelayValue      string `json:",omitempty" validate:"omitempty,printascii"`
+	VolumeOffset    string `json:",omitempty" validate:"omitempty,printascii"`
+	AlertToneType   string `json:",omitempty" validate:"omitempty,printascii"`
+	AlertToneVolume string `json:",omitempty" validate:"omitempty,printascii"`
+	AlertLightColor string `json:",omitempty" validate:"omitempty,printascii"`
+	AlertLightType  string `json:",omitempty" validate:"omitempty,printascii"`
+	NumberTag       string `json:",omitempty" validate:"omitempty,printascii"`
+	Priority        string `json:",omitempty" validate:"omitempty,printascii"`
 }
 
 func (c *ChannelInfo) UnmarshalBinary(data []byte) error {
-	split := strings.Split(string(data), "\x00")
+	nIndex := bytes.Index(data, []byte("\n"))
+	if nIndex == -1 {
+		nIndex = len(data) - 1
+	}
+	split := strings.Split(string(data[0:nIndex]), "\x00")
 
 	if len(split) >= 1 && split[0] != "" {
 		c.Name = split[0]
@@ -517,29 +538,29 @@ func (c *ChannelInfo) UnmarshalBinary(data []byte) error {
 }
 
 type Metadata struct {
-	TGID      string `json:",omitempty"`
+	TGID      string `json:",omitempty" validate:"omitempty,printascii"`
 	Frequency float64
-	WACN      string `json:",omitempty"`
-	NAC       string `json:",omitempty"`
-	UnitID    string `json:",omitempty"`
+	WACN      string `json:",omitempty" validate:"omitempty,hexadecimal"`
+	NAC       string `json:",omitempty" validate:"omitempty,hexadecimal"`
+	UnitID    string `json:",omitempty" validate:"omitempty,hexadecimal"`
 
-	RawTGID      string `json:",omitempty"`
-	RawFrequency string `json:",omitempty"`
-	RawWACN      string `json:",omitempty"`
-	RawNAC       string `json:",omitempty"`
-	RawUnitID    string `json:",omitempty"`
+	RawTGID      string `json:",omitempty" validate:"omitempty,printascii"`
+	RawFrequency string `json:",omitempty" validate:"omitempty,printascii"`
+	RawWACN      string `json:",omitempty" validate:"omitempty,printascii"`
+	RawNAC       string `json:",omitempty" validate:"omitempty,printascii"`
+	RawUnitID    string `json:",omitempty" validate:"omitempty,printascii"`
 
-	FrequencyFmt string `json:",omitempty"`
-	WACNFmt      string `json:",omitempty"`
-	UnknownFmt   string `json:",omitempty"`
-	NACFmt       string `json:",omitempty"`
+	FrequencyFmt string `json:",omitempty" validate:"omitempty,printascii"`
+	WACNFmt      string `json:",omitempty" validate:"omitempty,printascii"`
+	UnknownFmt   string `json:",omitempty" validate:"omitempty,printascii"`
+	NACFmt       string `json:",omitempty" validate:"omitempty,printascii"`
 }
 
 func (t *Metadata) UnmarshalBinary(data []byte) error {
-	fmtChunkSplit := strings.Split(string(data[0:65]), "\x00")
+	split := strings.Split(string(data[0:65]), "\x00")
 
-	if len(fmtChunkSplit) >= 1 {
-		t.RawTGID = fmtChunkSplit[0]
+	if len(split) >= 1 {
+		t.RawTGID = split[0]
 		if len(t.RawTGID) >= 5 {
 			t.TGID = t.RawTGID[5:]
 		}
@@ -552,8 +573,8 @@ func (t *Metadata) UnmarshalBinary(data []byte) error {
 		t.UnitID = t.RawUnitID[4:]
 	}
 
-	if len(fmtChunkSplit) >= 3 {
-		t.FrequencyFmt = fmtChunkSplit[2]
+	if len(split) >= 3 {
+		t.FrequencyFmt = split[2]
 
 		if t.FrequencyFmt != "" {
 			t.RawFrequency = fmt.Sprintf(t.FrequencyFmt, data[68:70], data[70:72])
@@ -568,20 +589,20 @@ func (t *Metadata) UnmarshalBinary(data []byte) error {
 		}
 	}
 
-	if len(fmtChunkSplit) >= 4 {
-		t.WACNFmt = fmtChunkSplit[3]
+	if len(split) >= 4 {
+		t.WACNFmt = split[3]
 
 		t.RawWACN = fmt.Sprintf(t.WACNFmt, data[212:216])
 
 		t.WACN = t.RawWACN[5:]
 	}
 
-	if len(fmtChunkSplit) >= 6 {
-		t.UnknownFmt = fmtChunkSplit[5]
+	if len(split) >= 6 {
+		t.UnknownFmt = split[5]
 	}
 
-	if len(fmtChunkSplit) >= 7 {
-		t.NACFmt = fmtChunkSplit[6]
+	if len(split) >= 7 {
+		t.NACFmt = split[6]
 
 		t.RawNAC = fmt.Sprintf(t.NACFmt, data[174:176])
 		t.NAC = t.RawNAC[1 : len(t.RawNAC)-2]

@@ -233,10 +233,10 @@ func decodeUNIDChunk(ch *riff.Chunk) (*UnidenChunk, error) {
 		if unmarshalErr := decodedChunk.Site.UnmarshalBinary(rawChunk.Site[0:len(rawChunk.Site)]); unmarshalErr != nil {
 			return nil, fmt.Errorf("error when decoding binary to site: %v", unmarshalErr)
 		}
-	}
 
-	if unmarshalErr := decodedChunk.Metadata.UnmarshalBinary(rawChunk.Metadata[0:len(rawChunk.Metadata)]); unmarshalErr != nil {
-		return nil, fmt.Errorf("error when decoding binary to metadata: %v", unmarshalErr)
+		if unmarshalErr := decodedChunk.Metadata.UnmarshalBinary(rawChunk.Metadata[0:len(rawChunk.Metadata)]); unmarshalErr != nil {
+			return nil, fmt.Errorf("error when decoding binary to metadata: %v", unmarshalErr)
+		}
 	}
 
 	ch.Drain()
