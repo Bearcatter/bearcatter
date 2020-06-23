@@ -24,6 +24,70 @@ In this folder named `gariac.sh`.
 
 In this folder named `theaton - BCD436HP WAV File Manager.xls`.
 
+#### Notes
+
+This program extracts WAV file header data from lists of BCD436HP/BCD536HP audio recordings.
+
+The WAV files must have the original filenames and be in the directories created by the scanner.
+
+Copy the folders of WAV files onto a computer in a separate folder with no other files.
+
+Press the "Import Files" button and select the first folder and the first WAV file that you want included.
+
+This program uses home-made directory dialog box to avoid having to ship a DLL file.
+
+This program will process all WAV files and folders with dates later than the file selected.
+
+(Hint: for testing, try a small number of files by starting with a recent one. Large lots can take time.)
+
+A new worksheet will be created with each process (Sheet1, Sheet2, etc.).
+
+These sheets only include the header fields that the developer considered useful and consistent.
+
+Three other sheets (Full, Full>, and Fields) will also be filled with data (and overwritten with each run).
+
+- Full - Prints the raw header data with 100 characters per cell, odd characters are converted to "|"
+- Full> - Same as Full except odd characters are replaced with the ASCII code in brackets "<>"
+- Fields - Includes all extracted fields, though many are truncated and empty or full of gibberish
+
+If you get a code error, go to the Developer tab and open Visual Basic.
+On the Tools tab click References, and make sure the following references are checked:
+
+- Visual Basic for Applications
+- Microsoft Excel 15.0 Object Library
+- OLE Automation
+- Microsoft Office 15.0 Object Library
+- Microsoft Forms 2.0 Object Library
+
+Please inform the developer if you needed to add any of these, or if you have problems or comments.
+
+Please also inform the developer if you discover or refine the identity of any data fields.
+
+This is freeware and a beta version, so there are no guarantees.
+
+© 2014 Timothy H. Heaton, theaton@usd.edu, version 0.3
+
+The BCD436HP/BCD536HP scanners record data in the WAV file headers that can be used for logging.
+
+The standard header blocks (IART, AGNR, etc.) contain data that is not particularly useful.
+
+(Data in these fields end with ASCII-0, with the rest of the block carried over from previous recordings.)
+
+Most of the data is recorded in blocks at the end of the standard header blocks.
+
+Within each large block (FL, System, etc.) the data is delimited with one ASCII-0 character.
+When the first field (name) is long, some of the later fields are truncated (common ones noted with "T").
+
+Future plans are to rename the WAV files and sort them into groups.
+
+Renaming could involve pre-appending the TG or Frequency and post-appending the UID or Tone/code.
+
+Sorting could involve grouping in folders by System and further by Department or Site.
+
+Conventional recordings could be grouped either by Department or simply by Frequency.
+
+Your suggestions are welcome.
+
 #### Spec
 
 | Pos | Field List & Descriptions                 |
@@ -47,7 +111,6 @@ In this folder named `theaton - BCD436HP WAV File Manager.xls`.
 | 853 | Site block (begins with Site name)        |
 | 918 | TGID (trunked only)                       |
 | 940 | WACN and RFSS (not yet implemented)       |
-
 
 | Pos | Favorites List Block   | Truncated? |
 |-----|------------------------|------------|
@@ -144,48 +207,6 @@ In this folder named `theaton - BCD436HP WAV File Manager.xls`.
 | 8   | EDACS (Wide)              | Yes        |
 | 9   | Shape (circle)            | Yes        |
 | 10  | Attenuator? (On/Off)      | Yes        |
-
-#### Notes
-This program extracts WAV file header data from lists of BCD436HP/BCD536HP audio recordings.
-The WAV files must have the original filenames and be in the directories created by the scanner.
-Copy the folders of WAV files onto a computer in a separate folder with no other files.
-Press the "Import Files" button and select the first folder and the first WAV file that you want included.
-This program uses home-made directory dialog box to avoid having to ship a DLL file.
-This program will process all WAV files and folders with dates later than the file selected.
-(Hint: for testing, try a small number of files by starting with a recent one. Large lots can take time.)
-A new worksheet will be created with each process (Sheet1, Sheet2, etc.).
-These sheets only include the header fields that the developer considered useful and consistent.
-Three other sheets (Full, Full>, and Fields) will also be filled with data (and overwritten with each run).
-◙ Full - Prints the raw header data with 100 characters per cell, odd characters are converted to "|"
-◙ Full> - Same as Full except odd characters are replaced with the ASCII code in brackets "<>"
-◙ Fields - Includes all extracted fields, though many are truncated and empty or full of gibberish
-
-If you get a code error, go to the Developer tab and open Visual Basic.
-On the Tools tab click References, and make sure the following references are checked:
-◙ Visual Basic for Applications
-◙ Microsoft Excel 15.0 Object Library
-◙ OLE Automation
-◙ Microsoft Office 15.0 Object Library
-◙ Microsoft Forms 2.0 Object Library
-Please inform the developer if you needed to add any of these, or if you have problems or comments.
-Please also inform the developer if you discover or refine the identity of any data fields.
-
-This is freeware and a beta version, so there are no guarantees.
-
-© 2014 Timothy H. Heaton, theaton@usd.edu, version 0.3
-
-The BCD436HP/BCD536HP scanners record data in the WAV file headers that can be used for logging.
-The standard header blocks (IART, AGNR, etc.) contain data that is not particularly useful.
-(Data in these fields end with ASCII-0, with the rest of the block carried over from previous recordings.)
-Most of the data is recorded in blocks at the end of the standard header blocks.
-Within each large block (FL, System, etc.) the data is delimited with one ASCII-0 character.
-When the first field (name) is long, some of the later fields are truncated (common ones noted with "T").
-
-Future plans are to rename the WAV files and sort them into groups.
-Renaming could involve pre-appending the TG or Frequency and post-appending the UID or Tone/code.
-Sorting could involve grouping in folders by System and further by Department or Site.
-Conventional recordings could be grouped either by Department or simply by Frequency.
-Your suggestions are welcome.
 
 #### Code
 

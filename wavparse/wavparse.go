@@ -5,12 +5,10 @@ package wavparse
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -20,27 +18,20 @@ import (
 
 const timestampFormat = "20060102150405"
 
-var frequencyRegex = regexp.MustCompile(`(?i)692558682d00000000(\d*)00000200000064646464`)
-
 var (
 	// See http://bwfmetaedit.sourceforge.net/listinfo.html
-	markerIART    = [4]byte{'I', 'A', 'R', 'T'}
-	markerISFT    = [4]byte{'I', 'S', 'F', 'T'}
-	markerICRD    = [4]byte{'I', 'C', 'R', 'D'}
-	markerICOP    = [4]byte{'I', 'C', 'O', 'P'}
-	markerIARL    = [4]byte{'I', 'A', 'R', 'L'}
-	markerINAM    = [4]byte{'I', 'N', 'A', 'M'}
-	markerIENG    = [4]byte{'I', 'E', 'N', 'G'}
-	markerIGNR    = [4]byte{'I', 'G', 'N', 'R'}
-	markerIPRD    = [4]byte{'I', 'P', 'R', 'D'}
-	markerISRC    = [4]byte{'I', 'S', 'R', 'C'}
-	markerISBJ    = [4]byte{'I', 'S', 'B', 'J'}
-	markerICMT    = [4]byte{'I', 'C', 'M', 'T'}
-	markerITRK    = [4]byte{'I', 'T', 'R', 'K'}
-	markerITRKBug = [4]byte{'i', 't', 'r', 'k'}
-	markerITCH    = [4]byte{'I', 'T', 'C', 'H'}
-	markerIKEY    = [4]byte{'I', 'K', 'E', 'Y'}
-	markerIMED    = [4]byte{'I', 'M', 'E', 'D'}
+	markerIART = [4]byte{'I', 'A', 'R', 'T'} // System
+	markerICRD = [4]byte{'I', 'C', 'R', 'D'} // Department
+	markerICOP = [4]byte{'I', 'C', 'O', 'P'} // Channel
+	markerINAM = [4]byte{'I', 'N', 'A', 'M'} // TGIDFreq
+	markerIGNR = [4]byte{'I', 'G', 'N', 'R'} // Product
+	markerIPRD = [4]byte{'I', 'P', 'R', 'D'} // Unknown
+	markerISRC = [4]byte{'I', 'S', 'R', 'C'} // Timestamp
+	markerISBJ = [4]byte{'I', 'S', 'B', 'J'} // Tone
+	markerICMT = [4]byte{'I', 'C', 'M', 'T'} // UnitID
+	markerITCH = [4]byte{'I', 'T', 'C', 'H'} // FavoriteListName
+	markerIKEY = [4]byte{'I', 'K', 'E', 'Y'} // Reserved
+
 	// cidLIST is the chunk ID for a LIST chunk
 	cidLIST = [4]byte{'L', 'I', 'S', 'T'}
 	// cidINFO is the chunk ID for an INFO chunk
@@ -49,75 +40,21 @@ var (
 	CIDUNID = [4]byte{'u', 'n', 'i', 'd'}
 )
 
-type Recording struct {
-	File     string
-	Public   *ListChunk
-	Private  *UnidenChunk
-	Duration time.Duration
-}
-
-type ListChunk struct {
-	System           string
-	Department       string
-	Channel          string
-	TGIDFreq         string
-	Product          string
-	Unknown          string
-	Timestamp        *time.Time
-	Tone             string
-	UnitID           int64
-	FavoriteListName string
-	Reserved         string
-}
-
-type FavoriteInfo struct {
-	Name string
-	File string
-}
-
-type SiteInfo struct {
-	Name string
-	Type string
-}
-
-type LocationInfo struct {
-	Latitude  float64
-	Longitude float64
-	Range     float64
-	Type      string
-}
-
-type SystemInfo struct {
-	Name string
-	Type string
-}
-type UnidenChunk struct {
-	FavoriteList FavoriteInfo
-	System       SystemInfo
-	Department   string
-	Channel      string
-	TGID         string
-	Frequency    float64
-	Site         SiteInfo
-	UnitID       int64
-	Location     LocationInfo
-	Debug        []string
-}
-
-func DecodeRecording(file string) (*Recording, error) {
+// DecodeRecording will decode the metadata in the WAV file at the given path.
+func DecodeRecording(path string) (*Recording, error) {
 	rec := &Recording{
-		File: filepath.Base(file),
+		File: filepath.Base(path),
 	}
-	f, openErr := os.Open(file)
+	f, openErr := os.Open(path)
 	if openErr != nil {
-		return nil, openErr
+		return nil, fmt.Errorf("error when opening wav file: %v", openErr)
 	}
 	defer f.Close()
 
 	c := riff.New(f)
 	if parseHeadersErr := c.ParseHeaders(); parseHeadersErr != nil {
 		if parseHeadersErr == io.EOF {
-			return nil, fmt.Errorf("file %s is invalid or empty unable to parse headers", file)
+			return nil, fmt.Errorf("file %s is invalid or empty unable to parse headers", path)
 		}
 		return nil, fmt.Errorf("error parsing headers: %v", parseHeadersErr)
 	}
@@ -125,10 +62,12 @@ func DecodeRecording(file string) (*Recording, error) {
 	for {
 		chunk, chunkErr := c.NextChunk()
 		if chunkErr != nil {
-			return nil, chunkErr
+			return nil, fmt.Errorf("error when getting next chunk of riff header: %v", chunkErr)
 		}
 		if chunk.ID == riff.FmtID {
-			chunk.DecodeWavHeader(c)
+			if decodeErr := chunk.DecodeWavHeader(c); decodeErr != nil {
+				return nil, fmt.Errorf("error when decoding wav header: %v", decodeErr)
+			}
 		} else if chunk.ID == riff.DataFormatID {
 			break
 		}
@@ -157,6 +96,18 @@ func DecodeRecording(file string) (*Recording, error) {
 	}
 
 	rec.Duration = duration
+
+	if rec.Public.TGIDFreq == "" && rec.Private.Metadata.TGID != "" {
+		rec.Public.TGIDFreq = rec.Private.Metadata.TGID
+	}
+
+	if rec.Private.Metadata.TGID == "" && rec.Public.TGIDFreq != "" {
+		rec.Private.Metadata.TGID = rec.Public.TGIDFreq
+	}
+
+	if rec.Private.Metadata.UnitID == "" && rec.Public.UnitID != "" {
+		rec.Private.Metadata.UnitID = rec.Public.UnitID
+	}
 
 	return rec, nil
 }
@@ -206,7 +157,9 @@ func decodeLISTChunk(ch *riff.Chunk) (*ListChunk, error) {
 				break
 			}
 			scratch = make([]byte, size)
-			r.Read(scratch)
+			if _, readErr := r.Read(scratch); readErr != nil {
+				return nil, fmt.Errorf("error while reading value in list chunk: %v", readErr)
+			}
 			switch id {
 			case markerIART:
 				recListChunk.System = nullTermStr(scratch)
@@ -231,11 +184,7 @@ func decodeLISTChunk(ch *riff.Chunk) (*ListChunk, error) {
 				recListChunk.Tone = nullTermStr(scratch)
 			case markerITCH:
 				if len(nullTermStr(scratch)) > 0 {
-					uid, uidErr := strconv.ParseInt(nullTermStr(scratch)[4:], 10, 64)
-					if uidErr != nil {
-						return nil, uidErr
-					}
-					recListChunk.UnitID = uid
+					recListChunk.UnitID = nullTermStr(scratch)[4:]
 				}
 			case markerISBJ:
 				recListChunk.FavoriteListName = nullTermStr(scratch)
@@ -250,102 +199,48 @@ func decodeLISTChunk(ch *riff.Chunk) (*ListChunk, error) {
 
 // decodeUNIDChunk decodes a UNID chunk
 func decodeUNIDChunk(ch *riff.Chunk) (*UnidenChunk, error) {
-	recUnidChunk := &UnidenChunk{}
+	decodedChunk := &UnidenChunk{}
 
 	if ch == nil {
-		return recUnidChunk, fmt.Errorf("can't decode a nil chunk")
+		return decodedChunk, fmt.Errorf("can't decode a nil chunk")
 	}
-	if ch.ID == CIDUNID {
-		// read the entire chunk in memory
-		buf := make([]byte, ch.Size)
-		_, readErr := ch.Read(buf)
-		if readErr != nil {
-			return recUnidChunk, fmt.Errorf("failed to read the UNID chunk - %v", readErr)
-		}
+	if ch.ID != CIDUNID {
+		return nil, fmt.Errorf("was given something other than a unid riff chunk")
+	}
+	rawChunk := RawUnidenChunk{}
 
-		split := bytes.Split(buf, []byte("\x00"))
+	if binErr := ch.ReadBE(&rawChunk); binErr != nil {
+		return nil, fmt.Errorf("error when parsing unid chunk as binary: %v\n", binErr)
+	}
 
-		uidStr := ""
+	if unmarshalErr := decodedChunk.Favorite.UnmarshalBinary(rawChunk.Favorite[0:len(rawChunk.Favorite)]); unmarshalErr != nil {
+		return nil, fmt.Errorf("error when decoding binary to favorite: %v", unmarshalErr)
+	}
 
-		for _, byt := range split {
-			bytStr := nullTermStr(byt)
-			if nullTermStr(byt) == "" {
-				continue
-			}
-			if strings.HasPrefix(bytStr, "UID:") {
-				uidStr = bytStr[4:]
-			}
-		}
+	if unmarshalErr := decodedChunk.System.UnmarshalBinary(rawChunk.System[0:len(rawChunk.System)]); unmarshalErr != nil {
+		return nil, fmt.Errorf("error when decoding binary to system: %v", unmarshalErr)
+	}
 
-		lat, latErr := strconv.ParseFloat(nullTermStr(split[26]), 10)
-		if latErr != nil {
-			return nil, latErr
-		}
-		lon, lonErr := strconv.ParseFloat(nullTermStr(split[27]), 10)
-		if lonErr != nil {
-			return nil, lonErr
-		}
-		ran, ranErr := strconv.ParseFloat(nullTermStr(split[28]), 10)
-		if ranErr != nil {
-			return nil, ranErr
-		}
+	if unmarshalErr := decodedChunk.Department.UnmarshalBinary(rawChunk.Department[0:len(rawChunk.Department)]); unmarshalErr != nil {
+		return nil, fmt.Errorf("error when decoding binary to department: %v", unmarshalErr)
+	}
 
-		uid := int64(0)
-		var uidErr error
-		if uidStr != "" {
-			uid, uidErr = strconv.ParseInt(uidStr, 10, 64)
-		}
+	if unmarshalErr := decodedChunk.Channel.UnmarshalBinary(rawChunk.Channel[0:len(rawChunk.Channel)]); unmarshalErr != nil {
+		return nil, fmt.Errorf("error when decoding binary to channel: %v", unmarshalErr)
+	}
 
-		if uidErr != nil {
-			return nil, uidErr
-		}
-
-		bufHex := make([]byte, hex.EncodedLen(len(buf)))
-		hex.Encode(bufHex, buf)
-
-		freq := float64(0.0)
-		freqHex := frequencyRegex.FindSubmatch(bufHex)
-		var freqErr error
-		if len(freqHex) > 0 {
-			// There is almost certainly a better way to do this...
-			freq, freqErr = strconv.ParseFloat(fmt.Sprintf("%s.%s", freqHex[1][1:4], freqHex[1][4:]), 64)
-		}
-		if len(freqHex) == 0 || freqErr != nil {
-			if freqErr == nil {
-				freqErr = fmt.Errorf("frequencey hex matches were empty")
-			}
-			return nil, freqErr
-		}
-
-		recUnidChunk = &UnidenChunk{
-			FavoriteList: FavoriteInfo{
-				Name: nullTermStr(split[0]),
-				File: nullTermStr(split[1]),
-			},
-			System: SystemInfo{
-				Name: nullTermStr(split[14]),
-				Type: nullTermStr(split[17]),
-			},
-			Department: nullTermStr(split[24]),
-			Channel:    nullTermStr(split[32]),
-			TGID:       nullTermStr(split[34]),
-			Site: SiteInfo{
-				Name: nullTermStr(split[42]),
-				Type: nullTermStr(split[49]),
-			},
-			Location: LocationInfo{
-				Latitude:  lat,
-				Longitude: lon,
-				Range:     ran,
-				Type:      nullTermStr(split[29]),
-			},
-			UnitID:    uid,
-			Frequency: freq,
-			Debug:     strings.Split(string(buf), "\x00"),
+	if decodedChunk.System.Type != "Conventional" {
+		if unmarshalErr := decodedChunk.Site.UnmarshalBinary(rawChunk.Site[0:len(rawChunk.Site)]); unmarshalErr != nil {
+			return nil, fmt.Errorf("error when decoding binary to site: %v", unmarshalErr)
 		}
 	}
+
+	if unmarshalErr := decodedChunk.Metadata.UnmarshalBinary(rawChunk.Metadata[0:len(rawChunk.Metadata)]); unmarshalErr != nil {
+		return nil, fmt.Errorf("error when decoding binary to metadata: %v", unmarshalErr)
+	}
+
 	ch.Drain()
-	return recUnidChunk, nil
+	return decodedChunk, nil
 }
 
 func nullTermStr(b []byte) string {
@@ -359,4 +254,15 @@ func clen(n []byte) int {
 		}
 	}
 	return len(n)
+}
+
+func parseBool(boolStr string) (bool, error) {
+	boolStr = strings.ToLower(boolStr)
+	if boolStr == "on" {
+		return true, nil
+	}
+	if boolStr == "off" {
+		return false, nil
+	}
+	return strconv.ParseBool(boolStr)
 }
