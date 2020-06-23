@@ -173,7 +173,6 @@ func (s *SiteInfo) UnmarshalBinary(data []byte) error {
 		var parseErr error
 		s.Attenuator, parseErr = parseBool(split[9])
 		if parseErr != nil {
-			fmt.Printf("SITE ATTN VAL %#q\n", split[9])
 			return fmt.Errorf("error when parsing site attenuator toggle to bool: %v", parseErr)
 		}
 	}
@@ -565,7 +564,6 @@ func (t *Metadata) UnmarshalBinary(data []byte) error {
 			var parseErr error
 			t.Frequency, parseErr = strconv.ParseFloat(strings.Split(t.RawFrequency, " ")[0], 64)
 			if parseErr != nil {
-				fmt.Printf("fmt %#q\n", t.FrequencyFmt)
 				return fmt.Errorf("error when parsing metadata raw frequency to float64: %v", parseErr)
 			}
 		}
