@@ -102,7 +102,7 @@ Metadata includes publicly documented and reverse engineered fields.`,
 
 			if jsonMultipleFiles {
 				jsonFileName := fmt.Sprintf("%s.json", decoded.File)
-				outputFile, outputFileErr := os.OpenFile(jsonFileName, os.O_RDWR|os.O_CREATE, os.ModePerm)
+				outputFile, outputFileErr := os.OpenFile(jsonFileName, os.O_RDWR|os.O_TRUNC, os.ModePerm)
 				if outputFileErr != nil {
 					log.Fatalf("Error when creating output file %s: %v\n", jsonFileName, outputFileErr)
 				}
@@ -122,7 +122,7 @@ Metadata includes publicly documented and reverse engineered fields.`,
 		fmt.Printf("\n")
 
 		if !jsonMultipleFiles {
-			outputFile, outputFileErr := os.OpenFile(outputFilePath, os.O_RDWR|os.O_CREATE, os.ModePerm)
+			outputFile, outputFileErr := os.OpenFile(outputFilePath, os.O_RDWR|os.O_TRUNC, os.ModePerm)
 			if outputFileErr != nil {
 				log.Fatalf("Error when creating output file %s: %v\n", outputFilePath, outputFileErr)
 			}

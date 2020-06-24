@@ -12,7 +12,6 @@ import (
 )
 
 func startWSServer(host string, port int, ctrl *ScannerCtrl) (*http.Server, error) {
-
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		conn, _, _, err := ws.UpgradeHTTP(r, w)
 		if err != nil {
@@ -54,7 +53,6 @@ func startWSServer(host string, port int, ctrl *ScannerCtrl) (*http.Server, erro
 
 		// WS Reader routine
 		go func() {
-
 			for {
 				select {
 				case _ = <-quitWriter:
@@ -66,7 +64,7 @@ func startWSServer(host string, port int, ctrl *ScannerCtrl) (*http.Server, erro
 
 				if readErr != nil {
 					// handle error
-					log.Errorln("Failed to read from WS, Terminating Client Conection", readErr)
+					log.Errorln("Failed to read from WS, Terminating Client Connection", readErr)
 					done <- true
 					quitReader <- true
 					return
@@ -79,7 +77,7 @@ func startWSServer(host string, port int, ctrl *ScannerCtrl) (*http.Server, erro
 
 				strMsg := string(crlfStrip(msgFromHost, LF))
 				if strMsg == TERMINATE {
-					log.Infoln("Received Client QUIT Command: Terminating Client Conection")
+					log.Infoln("Received Client QUIT Command: Terminating Client Connection")
 					done <- true
 					quitReader <- true
 					return
@@ -105,7 +103,6 @@ func startWSServer(host string, port int, ctrl *ScannerCtrl) (*http.Server, erro
 		// WS Writer routine
 		go func() {
 			for {
-
 				select {
 				case _ = <-quitReader:
 					return
@@ -149,7 +146,6 @@ func startWSServer(host string, port int, ctrl *ScannerCtrl) (*http.Server, erro
 			}
 		}
 		ctrl.mode.WSClientConnected = false
-
 	})
 
 	s := &http.Server{

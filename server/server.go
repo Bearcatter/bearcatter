@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -144,10 +145,6 @@ func (c *Config) Serve() {
 			msgType := string(buffer[:3])
 
 			ctrl.locker.pktRecv++
-
-			if buffer[3] == byte('\t') {
-				log.Warnln("Received a HomePatrol message!")
-			}
 
 			switch msgType {
 			case "APR":
@@ -309,6 +306,7 @@ func (c *Config) Serve() {
 
 				default:
 					log.Infoln("Unhandled GltXml Type", buffer)
+					spew.Dump(buffer)
 				}
 			case "VOL":
 				log.Infoln("VOL: Volume", string(buffer[4:]))
@@ -371,10 +369,10 @@ func (c *Config) Serve() {
 
 				switch hpCmd {
 				case "ERR":
-					log.Warnln("Scanner threw DATA ERR during file transfer!")
+					log.Errorf("File %s: Scanner threw DATA ERR during file transfer!\n", ctrl.incomingFile.Name)
 					continue
 				case "NG":
-					log.Warnln("Scanner said last command was invalid during DATA")
+					log.Warnf("File %s: Scanner said last command was invalid during DATA\n", ctrl.incomingFile.Name)
 					continue
 				case "STS":
 					ctrl.SendToRadioMsgChannel(buffer)
@@ -388,7 +386,7 @@ func (c *Config) Serve() {
 						}
 						continue
 					}
-					log.Debugf("Incoming file %v\n", newFile)
+					log.Infof("New incoming file: Name: %s, Size: %d, ExpectedBlocks: %d, Timestamp: %v\n", newFile.Name, newFile.Size, newFile.ExpectedBlocks, newFile.Timestamp)
 					ctrl.incomingFile = newFile
 
 					ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "DATA"})))
@@ -397,7 +395,7 @@ func (c *Config) Serve() {
 					switch dataSubCmd {
 					case "EOT":
 						// End of transmission
-						log.Infoln("Finished receiving file!")
+						log.Infof("File %s: Finished receiving with file length %d\n", ctrl.incomingFile.Name, ctrl.incomingFile.Size)
 
 						ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "DATA", "ACK"})))
 
@@ -406,44 +404,40 @@ func (c *Config) Serve() {
 						filePath := fmt.Sprintf("%s/%s", c.RecordingsPath, ctrl.incomingFile.Name)
 
 						if saveAudioErr := ioutil.WriteFile(filePath, ctrl.incomingFile.Data, 0777); saveAudioErr != nil {
-							log.Errorln("Error when saving audio file!", saveAudioErr)
+							log.Errorf("File %s: Error when saving audio file: %v\n", ctrl.incomingFile.Name, saveAudioErr)
+							continue
 						}
 
 						if metadataErr := ctrl.incomingFile.ParseMetadata(filePath); metadataErr != nil {
-							log.Errorln("Error when parsing metadata", metadataErr)
+							log.Errorf("File %s: Error when parsing metadata: %v\n", ctrl.incomingFile.Name, metadataErr)
 							continue
 						}
 
 						metadataJSON, metadataJSONErr := json.MarshalIndent(&ctrl.incomingFile.Metadata, "", "    ")
 						if metadataJSONErr != nil {
-							log.Errorln("Error when marshalling metadata", metadataJSONErr)
+							log.Errorf("File %s: Error when marshalling metadata: %v\n", ctrl.incomingFile.Name, metadataJSONErr)
 							continue
 						}
 
 						if saveMetadataErr := ioutil.WriteFile(fmt.Sprintf("%s.json", filePath), metadataJSON, 0777); saveMetadataErr != nil {
-							log.Errorln("Error when saving metadata file!", saveMetadataErr)
+							log.Errorf("File %s: Error when saving metadata file: %v\n", ctrl.incomingFile.Name, saveMetadataErr)
+							continue
 						}
-
-						break
 					case "CAN":
-						log.Warnln("File transfer canceled")
+						log.Warnf("File %s: Transfer canceled by scanner!\n", ctrl.incomingFile.Name)
 					default: // Receiving data
 						blockNum := split[2]
 						fileData := split[3]
-						log.Infof("Receiving file block %s with file length %d\n", blockNum, len(fileData))
+						log.Debugf("File %s: Received block %s of %d with file length %d\n", ctrl.incomingFile.Name, blockNum, ctrl.incomingFile.ExpectedBlocks, len(fileData))
 						hexData, hexDataErr := hex.DecodeString(fileData)
 						if hexDataErr != nil {
-							log.Errorln("Error when converting incoming file chunk to hex", hexDataErr)
+							// TODO: If we hit an error here we should DATA NAK so block gets re-delivered.
+							// Need to limit those attempts tho a sensible amount though
+							log.Errorf("File %s: Error when converting incoming file chunk to hex: %v\n", ctrl.incomingFile.Name, hexDataErr)
 						}
 						ctrl.incomingFile.Data = append(ctrl.incomingFile.Data, hexData...)
 
-						time.Sleep(50 * time.Millisecond)
-
 						ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "DATA", "ACK"})))
-						if !ctrl.incomingFile.Finished {
-							time.Sleep(50 * time.Millisecond)
-							ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "DATA"})))
-						}
 					}
 				}
 
@@ -459,7 +453,6 @@ func (c *Config) Serve() {
 				log.Infoln("Shutting down reader...")
 				do_quit = true
 			default:
-				log.Traceln("Sleeping")
 				time.Sleep(time.Millisecond * ctrl.GoProcDelay)
 			}
 		}
@@ -469,15 +462,17 @@ func (c *Config) Serve() {
 		ticker := time.NewTicker(1 * time.Second)
 		go func(ctrl *ScannerCtrl) {
 			time.Sleep(1 * time.Second)
-			success := ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "STS", "ON"})))
-			log.Infoln("success", success)
+
+			ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "STS", "ON"})))
 
 			time.Sleep(1 * time.Second)
 
 			for {
 				select {
 				case <-ticker.C:
-					ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "INFO"})))
+					if ctrl.incomingFile == nil || ctrl.incomingFile.Finished {
+						ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "INFO"})))
+					}
 				case <-ctrl.rq:
 					log.Infoln("Shutting down file polling")
 					ticker.Stop()

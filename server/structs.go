@@ -670,21 +670,19 @@ func (k *KeyPress) String() string {
 }
 
 type AudioFeedFile struct {
-	Name      string
-	Size      int64
-	Timestamp *time.Time
-	Data      []byte
-	Finished  bool
-	Metadata  *wavparse.Recording
+	Name           string
+	Size           int64
+	ExpectedBlocks int64
+	Timestamp      *time.Time
+	Data           []byte
+	Finished       bool
+	Metadata       *wavparse.Recording
 }
 
 func (a *AudioFeedFile) ParseMetadata(file string) error {
-	metadata, metadataErr := wavparse.DecodeRecording(file)
-	if metadataErr != nil {
-		return metadataErr
-	}
-	a.Metadata = metadata
-	return nil
+	var metadataErr error
+	a.Metadata, metadataErr = wavparse.DecodeRecording(file)
+	return metadataErr
 }
 
 var ErrNoFile = fmt.Errorf("no file name was set, probably waiting for info")
@@ -703,6 +701,8 @@ func NewAudioFeedFile(pieces []string) (*AudioFeedFile, error) {
 	}
 
 	file.Size = size
+
+	file.ExpectedBlocks = (size / 4096) * 2
 
 	// 06/20/2020 20:31:24
 	ts, tsErr := time.Parse("01/02/2006 15:04:05", pieces[2])

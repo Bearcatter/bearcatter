@@ -12,7 +12,6 @@ import (
 )
 
 func dumpBuf(buf []byte, len int) {
-
 	for i := 0; i < len; i++ {
 		if IsPrint(string(buf[i])) {
 			log.Infof("%c", buf[i])
@@ -42,7 +41,6 @@ func IsPrint(s string) bool {
 }
 
 func getXmlGLTFormatType(gltBuffer []byte) GltXmlType {
-
 	switch {
 	case strings.Contains(string(gltBuffer), "FL Index"):
 		return GltXmlFL

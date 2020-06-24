@@ -77,9 +77,8 @@ func (s *ScannerCtrl) ReceiveFromRadioMsgChannel() (MsgPacket, bool) {
 }
 
 func (s *ScannerCtrl) SendToRadioMsgChannel(msg []byte) bool {
-
 	if !s.IsLocked() {
-		log.Infoln("RadioMsgChannel: No Listener to Receive Msg, Msg Not Sent")
+		log.Debugln("RadioMsgChannel: No Listener to Receive Msg, Msg Not Sent")
 		// return false
 	}
 
@@ -91,19 +90,18 @@ func (s *ScannerCtrl) SendToRadioMsgChannel(msg []byte) bool {
 
 	select {
 	case s.radioMsg <- pkt:
-		log.Infof("Send Msg[ql=%d]: [%s] to Radio Msg Channel", len(s.radioMsg), msg)
+		log.Debugf("Send Msg[ql=%d]: [%s] to Radio Msg Channel", len(s.radioMsg), msg)
 		return true
 	default:
-		log.Infof("Queue Full, No Message Sent: %d", len(s.radioMsg))
+		log.Warnf("Queue Full, No Message Sent: %d", len(s.radioMsg))
 		time.Sleep(time.Millisecond * 50)
 	}
 	return false
 }
 
 func (s *ScannerCtrl) SendToHostMsgChannel(msg []byte) bool {
-
 	if !s.IsLocked() {
-		log.Warnln("HostMsgChannel: No Listener to Receive Msg, Msg Not Sent")
+		log.Debugln("HostMsgChannel: No Listener to Receive Msg, Msg Not Sent")
 		// return false
 	}
 
@@ -121,14 +119,13 @@ func (s *ScannerCtrl) SendToHostMsgChannel(msg []byte) bool {
 	case s.hostMsg <- pkt:
 		return true
 	default:
-		log.Infof("Queue Full, No Message Sent: %d", len(s.radioMsg))
+		log.Warnf("Queue Full, No Message Sent: %d", len(s.radioMsg))
 		time.Sleep(time.Millisecond * 50)
 	}
 	return false
 }
 
 func (c *ScannerCtrl) drain() {
-
 	if c.conn.Type == ConnTypeUSB {
 		if flushErr := c.conn.usbConn.Flush(); flushErr != nil {
 			log.Fatalln("Error while flushing USB", flushErr)
@@ -154,7 +151,6 @@ func (c *ScannerCtrl) drain() {
 }
 
 func CreateScannerCtrl() *ScannerCtrl {
-
 	ctrl := &ScannerCtrl{}
 
 	ctrl.rq = make(chan bool, 1)

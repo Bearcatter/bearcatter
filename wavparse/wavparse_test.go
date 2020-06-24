@@ -72,7 +72,7 @@ type WavPlayerEntry struct {
 }
 
 func TestDecodeRecording(t *testing.T) {
-	testCaseFile, openErr := os.OpenFile("fixtures.csv", os.O_RDWR|os.O_CREATE, os.ModePerm)
+	testCaseFile, openErr := os.OpenFile("fixtures.csv", os.O_RDONLY, os.ModePerm)
 	if openErr != nil {
 		t.Fatalf("error when opening csv containing testcases: %v", openErr)
 	}
