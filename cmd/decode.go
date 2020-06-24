@@ -45,7 +45,7 @@ Metadata includes publicly documented and reverse engineered fields.`,
 		}
 
 		if outputFormat != filepath.Ext(outputFileName)[1:] {
-			log.Warnf("Output file name %s does not has output format extension %s\n", outputFileName, outputFormat)
+			log.Warnf("Output file name %s does not have output format extension %s\n", outputFileName, outputFormat)
 		}
 
 		csvDelimiterRune, _ := utf8.DecodeRuneInString(csvDelimiter)
