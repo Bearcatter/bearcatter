@@ -19,3 +19,6 @@ bearcatter
 .DS_Store
 
 audio/*
+
+*.json
+*.csv

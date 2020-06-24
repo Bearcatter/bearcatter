@@ -94,7 +94,7 @@ func DecodeRecording(path string) (*Recording, error) {
 		return nil, fmt.Errorf("error getting file duration: %w", durationErr)
 	}
 
-	rec.Duration = duration
+	rec.Duration = StopwatchDuration(duration)
 
 	if rec.Public.TGIDFreq == "" && rec.Private.Metadata.TGID != "" {
 		rec.Public.TGIDFreq = rec.Private.Metadata.TGID
