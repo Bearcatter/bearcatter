@@ -551,7 +551,7 @@ func (d *DateTimeInfo) String() string {
 }
 
 func NewDateTimeInfo(raw string) *DateTimeInfo {
-	parsedTime, _ := time.Parse(DateTimeFormat, raw[2:len(raw)-2])
+	parsedTime, _ := time.ParseInLocation(DateTimeFormat, raw[2:len(raw)-2], time.Local)
 	dst, _ := strconv.ParseBool(raw[0:1])
 	rtc, _ := strconv.ParseBool(raw[len(raw)-1:])
 	return &DateTimeInfo{
@@ -705,7 +705,7 @@ func NewAudioFeedFile(pieces []string) (*AudioFeedFile, error) {
 	file.ExpectedBlocks = (size / 4096) * 2
 
 	// 06/20/2020 20:31:24
-	ts, tsErr := time.Parse("01/02/2006 15:04:05", pieces[2])
+	ts, tsErr := time.ParseInLocation("01/02/2006 15:04:05", pieces[2], time.Local)
 	if tsErr != nil {
 		return nil, tsErr
 	}

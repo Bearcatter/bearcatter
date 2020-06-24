@@ -386,7 +386,7 @@ func (c *Config) Serve() {
 						}
 						continue
 					}
-					log.Infof("New incoming file: Name: %s, Size: %d, ExpectedBlocks: %d, Timestamp: %v\n", newFile.Name, newFile.Size, newFile.ExpectedBlocks, newFile.Timestamp)
+					log.Infof("File %s: Beginning to transfer: Size: %d, ExpectedBlocks: %d, Timestamp: %v\n", newFile.Name, newFile.Size, newFile.ExpectedBlocks, newFile.Timestamp)
 					ctrl.incomingFile = newFile
 
 					ctrl.SendToHostMsgChannel([]byte(homepatrolCommand([]string{"AUF", "DATA"})))
