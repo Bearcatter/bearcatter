@@ -54,7 +54,7 @@ type ScannerCtrl struct {
 func (s *ScannerCtrl) IsLocked() bool {
 	var locked bool
 	s.locker.Lock()
-	if s.locker.state == true {
+	if s.locker.state {
 		locked = true
 		log.Tracef("UDP Packets Sent: [%d] UDP Packets Recv: [%d]", s.locker.pktSent, s.locker.pktRecv)
 	} else {

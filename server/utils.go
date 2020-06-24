@@ -11,26 +11,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func dumpBuf(buf []byte, len int) {
-	for i := 0; i < len; i++ {
-		if IsPrint(string(buf[i])) {
-			log.Infof("%c", buf[i])
-		} else {
-			log.Infoln("")
-		}
-	}
-	log.Infoln("")
-}
-
-func isAlphaNum(s string) bool {
-	for _, r := range s {
-		if (r < 'a' || r > 'z') && (r < 'A' || r > 'Z') && (r < '0' || r > '9') {
-			return false
-		}
-	}
-	return true
-}
-
 func IsPrint(s string) bool {
 	for _, r := range s {
 		if !unicode.IsPrint(r) {
@@ -75,7 +55,7 @@ func getXmlGLTFormatType(gltBuffer []byte) GltXmlType {
 	}
 }
 
-func loadValidKeys() map[string]SDSKeyType {
+/* func loadValidKeys() map[string]SDSKeyType {
 	sdsKeys := make(map[string]SDSKeyType)
 
 	sdsKeys["M"] = KEY_MENU
@@ -117,7 +97,7 @@ func isValidKey(buffer []byte) bool {
 		return false
 	}
 	return true
-}
+} */
 
 func crlfStrip(msg []byte, flags uint) string {
 	var replacer []string
@@ -137,10 +117,8 @@ func IsValidXMLMessage(msgType string, buffer []byte) bool {
 	switch msgType {
 	case "GSI", "PSI":
 		msg = ScannerInfo{}
-		break
 	case "MSI":
 		msg = MsiInfo{}
-		break
 	case "STS":
 	case "GLG":
 	case "GLT":

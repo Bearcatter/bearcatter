@@ -29,7 +29,7 @@ func startWSServer(host string, port int, ctrl *ScannerCtrl) (*http.Server, erro
 			}
 		}()
 
-		if ctrl.locker.state == true {
+		if ctrl.locker.state {
 			log.Infoln("Scanner is already is use by", ctrl.locker.name)
 			if writeErr := wsutil.WriteServerMessage(conn, ws.OpBinary, []byte("Locked by "+ctrl.locker.name)); writeErr != nil {
 				// handle error
@@ -55,7 +55,7 @@ func startWSServer(host string, port int, ctrl *ScannerCtrl) (*http.Server, erro
 		go func() {
 			for {
 				select {
-				case _ = <-quitWriter:
+				case <-quitWriter:
 					return
 				default:
 					time.Sleep(time.Millisecond * 50)
@@ -104,7 +104,7 @@ func startWSServer(host string, port int, ctrl *ScannerCtrl) (*http.Server, erro
 		go func() {
 			for {
 				select {
-				case _ = <-quitReader:
+				case <-quitReader:
 					return
 				default:
 					time.Sleep(time.Millisecond * 50)
@@ -155,7 +155,11 @@ func startWSServer(host string, port int, ctrl *ScannerCtrl) (*http.Server, erro
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
-	go s.ListenAndServe()
+	go func() {
+		if listenErr := s.ListenAndServe(); listenErr != nil {
+			log.Fatalln("Error when listening for WebSocket Server", listenErr)
+		}
+	}()
 	log.Infoln("Started WebSocket Server at", s.Addr)
 	return s, nil
 }

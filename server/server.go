@@ -103,8 +103,6 @@ func (c *Config) Serve() {
 							time.Sleep(time.Millisecond * 50)
 						}
 						return
-					} else {
-						// TODO - no ping! ctrl.SendToRadioMsgChannel([]byte("ping"))
 					}
 				}
 			}
@@ -116,7 +114,7 @@ func (c *Config) Serve() {
 			if bytes.Equal(buffer[4:9], []byte(`<XML>`)) {
 				xmlMessageType = string(buffer[0:3])
 				copy(xmlMessage, buffer[0:n])
-				if IsValidXMLMessage(xmlMessageType, xmlMessage) == false {
+				if !IsValidXMLMessage(xmlMessageType, xmlMessage) {
 					isXML = true
 					continue
 				}
@@ -128,7 +126,7 @@ func (c *Config) Serve() {
 
 			if isXML {
 				xmlMessage = append(xmlMessage, buffer[0:n]...)
-				if IsValidXMLMessage(xmlMessageType, xmlMessage) == false {
+				if !IsValidXMLMessage(xmlMessageType, xmlMessage) {
 					continue
 				}
 				// Double comma to match the /r that is normally here

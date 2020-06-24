@@ -77,16 +77,16 @@ const (
 	GltXmlCNV_DISCOV
 
 	AstModeCurrentActivity ASTModeType = "CURRENT_ACTIVITY"
-	AstModeLCNMonitor                  = "LCN_MONITOR"
-	AstActivityLog                     = "ACTIVITY_LOG"
-	AstLCNFinder                       = "LCN_FINDER"
+	AstModeLCNMonitor      ASTModeType = "LCN_MONITOR"
+	AstActivityLog         ASTModeType = "ACTIVITY_LOG"
+	AstLCNFinder           ASTModeType = "LCN_FINDER"
 
 	AprModePause APRModeType = "PAUSE"
 	AprModeRESME APRModeType = "RESUME"
 )
 
 var (
-	validKeys = loadValidKeys()
+	// validKeys = loadValidKeys()
 	TERMINATE = "quit\r"
 )
 
