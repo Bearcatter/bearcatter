@@ -2,49 +2,79 @@ package wavparse
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
 )
 
+type StopwatchDuration time.Duration
+
+func (clock *StopwatchDuration) MarshalJSON() ([]byte, error) {
+	csv, _ := clock.MarshalCSV()
+	return json.Marshal(csv)
+}
+
+// Convert the internal duration as CSV string.
+func (clock *StopwatchDuration) MarshalCSV() (string, error) {
+	d := time.Duration(*clock)
+	h := d / time.Hour
+	d -= h * time.Hour
+	m := d / time.Minute
+	d -= m * time.Minute
+	s := d / time.Second
+	return fmt.Sprintf("%02d:%02d:%02d", h, m, s), nil
+}
+
+// Convert the CSV string as internal duration.
+func (clock *StopwatchDuration) UnmarshalCSV(csv string) error {
+	split := strings.Split(csv, ":")
+	dur, err := time.ParseDuration(fmt.Sprintf("%sh%sm%ss", split[0], split[1], split[2]))
+	if err != nil {
+		return err
+	}
+	*clock = StopwatchDuration(dur)
+	return nil
+}
+
 type Recording struct {
-	File     string        `json:",omitempty" validate:"omitempty,printascii"`
-	Public   *ListChunk    `json:",omitempty"`
-	Private  *UnidenChunk  `json:",omitempty"`
-	Duration time.Duration `json:",omitempty"`
+	File     string            `json:",omitempty" validate:"omitempty,printascii"`
+	Duration StopwatchDuration `json:",omitempty"`
+	Public   *ListChunk        `csv:"-" json:",omitempty"`
+	Private  *UnidenChunk      `csv:"-" json:",omitempty"`
 }
 type ListChunk struct {
-	System           string     `json:",omitempty" validate:"omitempty,printascii"` // IART
-	Department       string     `json:",omitempty" validate:"omitempty,printascii"` // IGNR
-	Channel          string     `json:",omitempty" validate:"omitempty,printascii"` // INAM
-	TGIDFreq         string     `json:",omitempty" validate:"omitempty,printascii"` // ICMT
-	Product          string     `json:",omitempty" validate:"omitempty,printascii"` // IPRD
-	Unknown          string     `json:",omitempty" validate:"omitempty,printascii"` // IKEY
-	Timestamp        *time.Time `json:",omitempty" validate:"omitempty,printascii"` // ICRD
-	Tone             string     `json:",omitempty" validate:"omitempty,printascii"` // ISRC
-	UnitID           string     `json:",omitempty" validate:"omitempty,printascii"` // ITCH
-	FavoriteListName string     `json:",omitempty" validate:"omitempty,printascii"` // ISBJ
-	Reserved         string     `json:",omitempty" validate:"omitempty,printascii"` // ICOP
+	System           string     `csv:"Public_System" json:",omitempty" validate:"omitempty,printascii"`           // IART
+	Department       string     `csv:"Public_Department" json:",omitempty" validate:"omitempty,printascii"`       // IGNR
+	Channel          string     `csv:"Public_Channel" json:",omitempty" validate:"omitempty,printascii"`          // INAM
+	TGIDFreq         string     `csv:"Public_TGIDFreq" json:",omitempty" validate:"omitempty,printascii"`         // ICMT
+	Product          string     `csv:"Public_Product" json:",omitempty" validate:"omitempty,printascii"`          // IPRD
+	Unknown          string     `csv:"Public_Unknown" json:",omitempty" validate:"omitempty,printascii"`          // IKEY
+	Timestamp        *time.Time `csv:"Public_Timestamp" json:",omitempty" validate:"omitempty,printascii"`        // ICRD
+	Tone             string     `csv:"Public_Tone" json:",omitempty" validate:"omitempty,printascii"`             // ISRC
+	UnitID           string     `csv:"Public_UnitID" json:",omitempty" validate:"omitempty,printascii"`           // ITCH
+	FavoriteListName string     `csv:"Public_FavoriteListName" json:",omitempty" validate:"omitempty,printascii"` // ISBJ
+	Reserved         string     `csv:"Public_Reserved" json:",omitempty" validate:"omitempty,printascii"`         // ICOP
 }
 
 type FavoriteInfo struct {
-	Name            string `json:",omitempty" validate:"omitempty,printascii"`
-	File            string `json:",omitempty" validate:"omitempty,printascii"`
-	LocationControl bool
-	Monitor         bool
-	QuickKey        string `json:",omitempty" validate:"omitempty,printascii"`
-	NumberTag       string `json:",omitempty" validate:"omitempty,printascii"`
-	ConfigKey0      string `json:",omitempty" validate:"omitempty,printascii"`
-	ConfigKey1      string `json:",omitempty" validate:"omitempty,printascii"`
-	ConfigKey2      string `json:",omitempty" validate:"omitempty,printascii"`
-	ConfigKey3      string `json:",omitempty" validate:"omitempty,printascii"`
-	ConfigKey4      string `json:",omitempty" validate:"omitempty,printascii"`
-	ConfigKey5      string `json:",omitempty" validate:"omitempty,printascii"`
-	ConfigKey6      string `json:",omitempty" validate:"omitempty,printascii"`
-	ConfigKey7      string `json:",omitempty" validate:"omitempty,printascii"`
-	ConfigKey8      string `json:",omitempty" validate:"omitempty,printascii"`
-	ConfigKey9      string `json:",omitempty" validate:"omitempty,printascii"`
+	Name            string `csv:"Favorite_Name" json:",omitempty" validate:"omitempty,printascii"`
+	File            string `csv:"Favorite_File" json:",omitempty" validate:"omitempty,printascii"`
+	LocationControl bool   `csv:"Favorite_LocationControl"`
+	Monitor         bool   `csv:"Favorite_Monitor"`
+	QuickKey        string `csv:"Favorite_QuickKey" json:",omitempty" validate:"omitempty,printascii"`
+	NumberTag       string `csv:"Favorite_NumberTag" json:",omitempty" validate:"omitempty,printascii"`
+	ConfigKey0      string `csv:"Favorite_ConfigKey0" json:",omitempty" validate:"omitempty,printascii"`
+	ConfigKey1      string `csv:"Favorite_ConfigKey1" json:",omitempty" validate:"omitempty,printascii"`
+	ConfigKey2      string `csv:"Favorite_ConfigKey2" json:",omitempty" validate:"omitempty,printascii"`
+	ConfigKey3      string `csv:"Favorite_ConfigKey3" json:",omitempty" validate:"omitempty,printascii"`
+	ConfigKey4      string `csv:"Favorite_ConfigKey4" json:",omitempty" validate:"omitempty,printascii"`
+	ConfigKey5      string `csv:"Favorite_ConfigKey5" json:",omitempty" validate:"omitempty,printascii"`
+	ConfigKey6      string `csv:"Favorite_ConfigKey6" json:",omitempty" validate:"omitempty,printascii"`
+	ConfigKey7      string `csv:"Favorite_ConfigKey7" json:",omitempty" validate:"omitempty,printascii"`
+	ConfigKey8      string `csv:"Favorite_ConfigKey8" json:",omitempty" validate:"omitempty,printascii"`
+	ConfigKey9      string `csv:"Favorite_ConfigKey9" json:",omitempty" validate:"omitempty,printascii"`
 }
 
 func (f *FavoriteInfo) UnmarshalBinary(data []byte) error {
@@ -115,16 +145,16 @@ func (f *FavoriteInfo) UnmarshalBinary(data []byte) error {
 }
 
 type SiteInfo struct {
-	Name             string `json:",omitempty" validate:"omitempty,printascii"`
-	Avoid            bool
-	Latitude         float64 `validate:"latitude"`
-	Longitude        float64 `validate:"longitude"`
-	Range            float64
-	Modulation       string `json:",omitempty" validate:"omitempty,printascii"`
-	MotorolaBandPlan string `json:",omitempty" validate:"omitempty,printascii"`
-	EDACS            string `json:",omitempty" validate:"omitempty,printascii"`
-	Shape            string `json:",omitempty" validate:"omitempty,printascii"`
-	Attenuator       bool
+	Name             string  `csv:"Site_Name" json:",omitempty" validate:"omitempty,printascii"`
+	Avoid            bool    `csv:"Site_Avoid"`
+	Latitude         float64 `csv:"Site_Latitude" validate:"latitude"`
+	Longitude        float64 `csv:"Site_Longitude" validate:"longitude"`
+	Range            float64 `csv:"Site_Range"`
+	Modulation       string  `csv:"Site_Modulation" json:",omitempty" validate:"omitempty,printascii"`
+	MotorolaBandPlan string  `csv:"Site_MotorolaBandPlan" json:",omitempty" validate:"omitempty,printascii"`
+	EDACS            string  `csv:"Site_EDACS" json:",omitempty" validate:"omitempty,printascii"`
+	Shape            string  `csv:"Site_Shape" json:",omitempty" validate:"omitempty,printascii"`
+	Attenuator       bool    `csv:"Site_Attenuator"`
 }
 
 func (s *SiteInfo) UnmarshalBinary(data []byte) error {
@@ -188,24 +218,24 @@ func (s *SiteInfo) UnmarshalBinary(data []byte) error {
 }
 
 type SystemInfo struct {
-	Name                     string `json:",omitempty" validate:"omitempty,printascii"`
-	Avoid                    bool
-	Blank                    string `json:",omitempty" validate:"omitempty,printascii"`
-	Type                     string `json:",omitempty" validate:"omitempty,printascii"`
-	IDSearch                 bool
-	EmergencyAlertType       string `json:",omitempty" validate:"omitempty,printascii"`
-	AlertVolume              string `json:",omitempty" validate:"omitempty,printascii"`
-	MotorolaStatusBit        string `json:",omitempty" validate:"omitempty,printascii"`
-	P25NAC                   string `json:",omitempty" validate:"omitempty,printascii"`
-	QuickKey                 string `json:",omitempty" validate:"omitempty,printascii"`
-	NumberTag                string `json:",omitempty" validate:"omitempty,printascii"`
-	HoldTime                 string `json:",omitempty" validate:"omitempty,printascii"`
-	AnalogAGC                string `json:",omitempty" validate:"omitempty,printascii"`
-	DigitalAGC               string `json:",omitempty" validate:"omitempty,printascii"`
-	EndCode                  string `json:",omitempty" validate:"omitempty,printascii"`
-	PriorityID               string `json:",omitempty" validate:"omitempty,printascii"`
-	EmergencyAlertLightColor string `json:",omitempty" validate:"omitempty,printascii"`
-	EmergencyAlertCondition  string `json:",omitempty" validate:"omitempty,printascii"`
+	Name                     string `csv:"System_Name" json:",omitempty" validate:"omitempty,printascii"`
+	Avoid                    bool   `csv:"System_Avoid"`
+	Blank                    string `csv:"System_Blank" json:",omitempty" validate:"omitempty,printascii"`
+	Type                     string `csv:"System_Type" json:",omitempty" validate:"omitempty,printascii"`
+	IDSearch                 bool   `csv:"System_IDSearch"`
+	EmergencyAlertType       string `csv:"System_EmergencyAlertType" json:",omitempty" validate:"omitempty,printascii"`
+	AlertVolume              string `csv:"System_AlertVolume" json:",omitempty" validate:"omitempty,printascii"`
+	MotorolaStatusBit        string `csv:"System_MotorolaStatusBit" json:",omitempty" validate:"omitempty,printascii"`
+	P25NAC                   string `csv:"System_P25NAC" json:",omitempty" validate:"omitempty,printascii"`
+	QuickKey                 string `csv:"System_QuickKey" json:",omitempty" validate:"omitempty,printascii"`
+	NumberTag                string `csv:"System_NumberTag" json:",omitempty" validate:"omitempty,printascii"`
+	HoldTime                 string `csv:"System_HoldTime" json:",omitempty" validate:"omitempty,printascii"`
+	AnalogAGC                string `csv:"System_AnalogAGC" json:",omitempty" validate:"omitempty,printascii"`
+	DigitalAGC               string `csv:"System_DigitalAGC" json:",omitempty" validate:"omitempty,printascii"`
+	EndCode                  string `csv:"System_EndCode" json:",omitempty" validate:"omitempty,printascii"`
+	PriorityID               string `csv:"System_PriorityID" json:",omitempty" validate:"omitempty,printascii"`
+	EmergencyAlertLightColor string `csv:"System_EmergencyAlertLightColor" json:",omitempty" validate:"omitempty,printascii"`
+	EmergencyAlertCondition  string `csv:"System_EmergencyAlertCondition" json:",omitempty" validate:"omitempty,printascii"`
 }
 
 func (s *SystemInfo) UnmarshalBinary(data []byte) error {
@@ -282,13 +312,13 @@ func (s *SystemInfo) UnmarshalBinary(data []byte) error {
 }
 
 type DepartmentInfo struct {
-	Name      string `json:",omitempty" validate:"omitempty,printascii"`
-	Avoid     bool
-	Latitude  float64 `validate:"latitude"`
-	Longitude float64 `validate:"longitude"`
-	Range     float64
-	Shape     string `json:",omitempty" validate:"omitempty,printascii"`
-	NumberTag string `json:",omitempty" validate:"omitempty,printascii"`
+	Name      string  `csv:"Department_Name" json:",omitempty" validate:"omitempty,printascii"`
+	Avoid     bool    `csv:"Department_Avoid"`
+	Latitude  float64 `csv:"Department_Latitude" validate:"latitude"`
+	Longitude float64 `csv:"Department_Longitude" validate:"longitude"`
+	Range     float64 `csv:"Department_Range"`
+	Shape     string  `csv:"Department_Shape" json:",omitempty" validate:"omitempty,printascii"`
+	NumberTag string  `csv:"Department_NumberTag" json:",omitempty" validate:"omitempty,printascii"`
 }
 
 func (d *DepartmentInfo) UnmarshalBinary(data []byte) error {
@@ -445,21 +475,21 @@ func (s ServiceType) String() string {
 }
 
 type ChannelInfo struct {
-	Name            string `json:",omitempty" validate:"omitempty,printascii"`
-	Avoid           bool
-	TGIDFrequency   string `json:",omitempty" validate:"omitempty,printascii"`
-	Mode            string `json:",omitempty" validate:"omitempty,printascii"`
-	ToneCode        string `json:",omitempty" validate:"omitempty,printascii"`
-	ServiceType     ServiceType
-	Attenuator      int    // Conventional systems only
-	DelayValue      string `json:",omitempty" validate:"omitempty,printascii"`
-	VolumeOffset    string `json:",omitempty" validate:"omitempty,printascii"`
-	AlertToneType   string `json:",omitempty" validate:"omitempty,printascii"`
-	AlertToneVolume string `json:",omitempty" validate:"omitempty,printascii"`
-	AlertLightColor string `json:",omitempty" validate:"omitempty,printascii"`
-	AlertLightType  string `json:",omitempty" validate:"omitempty,printascii"`
-	NumberTag       string `json:",omitempty" validate:"omitempty,printascii"`
-	Priority        string `json:",omitempty" validate:"omitempty,printascii"`
+	Name            string      `csv:"Channel_Name" json:",omitempty" validate:"omitempty,printascii"`
+	Avoid           bool        `csv:"Channel_Avoid"`
+	TGIDFrequency   string      `csv:"Channel_TGIDFrequency" json:",omitempty" validate:"omitempty,printascii"`
+	Mode            string      `csv:"Channel_Mode" json:",omitempty" validate:"omitempty,printascii"`
+	ToneCode        string      `csv:"Channel_ToneCode" json:",omitempty" validate:"omitempty,printascii"`
+	ServiceType     ServiceType `csv:"Channel_ServiceType"`
+	Attenuator      int         `csv:"Channel_Attenuator"` // Conventional systems only
+	DelayValue      string      `csv:"Channel_DelayValue" json:",omitempty" validate:"omitempty,printascii"`
+	VolumeOffset    string      `csv:"Channel_VolumeOffset" json:",omitempty" validate:"omitempty,printascii"`
+	AlertToneType   string      `csv:"Channel_AlertToneType" json:",omitempty" validate:"omitempty,printascii"`
+	AlertToneVolume string      `csv:"Channel_AlertToneVolume" json:",omitempty" validate:"omitempty,printascii"`
+	AlertLightColor string      `csv:"Channel_AlertLightColor" json:",omitempty" validate:"omitempty,printascii"`
+	AlertLightType  string      `csv:"Channel_AlertLightType" json:",omitempty" validate:"omitempty,printascii"`
+	NumberTag       string      `csv:"Channel_NumberTag" json:",omitempty" validate:"omitempty,printascii"`
+	Priority        string      `csv:"Channel_Priority" json:",omitempty" validate:"omitempty,printascii"`
 }
 
 func (c *ChannelInfo) UnmarshalBinary(data []byte) error {
@@ -538,22 +568,22 @@ func (c *ChannelInfo) UnmarshalBinary(data []byte) error {
 }
 
 type Metadata struct {
-	TGID      string `json:",omitempty" validate:"omitempty,printascii"`
-	Frequency float64
-	WACN      string `json:",omitempty" validate:"omitempty,hexadecimal"`
-	NAC       string `json:",omitempty" validate:"omitempty,hexadecimal"`
-	UnitID    string `json:",omitempty" validate:"omitempty,hexadecimal"`
+	TGID      string  `csv:"Metadata_TGID" json:",omitempty" validate:"omitempty,printascii"`
+	Frequency float64 `csv:"Metadata_Frequency"`
+	WACN      string  `csv:"Metadata_WACN" json:",omitempty" validate:"omitempty,hexadecimal"`
+	NAC       string  `csv:"Metadata_NAC" json:",omitempty" validate:"omitempty,hexadecimal"`
+	UnitID    string  `csv:"Metadata_UnitID" json:",omitempty" validate:"omitempty,hexadecimal"`
 
-	RawTGID      string `json:",omitempty" validate:"omitempty,printascii"`
-	RawFrequency string `json:",omitempty" validate:"omitempty,printascii"`
-	RawWACN      string `json:",omitempty" validate:"omitempty,printascii"`
-	RawNAC       string `json:",omitempty" validate:"omitempty,printascii"`
-	RawUnitID    string `json:",omitempty" validate:"omitempty,printascii"`
+	RawTGID      string `csv:"Metadata_RawTGID" json:",omitempty" validate:"omitempty,printascii"`
+	RawFrequency string `csv:"Metadata_RawFrequency" json:",omitempty" validate:"omitempty,printascii"`
+	RawWACN      string `csv:"Metadata_RawWACN" json:",omitempty" validate:"omitempty,printascii"`
+	RawNAC       string `csv:"Metadata_RawNAC" json:",omitempty" validate:"omitempty,printascii"`
+	RawUnitID    string `csv:"Metadata_RawUnitID" json:",omitempty" validate:"omitempty,printascii"`
 
-	FrequencyFmt string `json:",omitempty" validate:"omitempty,printascii"`
-	WACNFmt      string `json:",omitempty" validate:"omitempty,printascii"`
-	UnknownFmt   string `json:",omitempty" validate:"omitempty,printascii"`
-	NACFmt       string `json:",omitempty" validate:"omitempty,printascii"`
+	FrequencyFmt string `csv:"Metadata_FrequencyFmt" json:",omitempty" validate:"omitempty,printascii"`
+	WACNFmt      string `csv:"Metadata_WACNFmt" json:",omitempty" validate:"omitempty,printascii"`
+	UnknownFmt   string `csv:"Metadata_UnknownFmt" json:",omitempty" validate:"omitempty,printascii"`
+	NACFmt       string `csv:"Metadata_NACFmt" json:",omitempty" validate:"omitempty,printascii"`
 }
 
 func (t *Metadata) UnmarshalBinary(data []byte) error {
@@ -625,10 +655,10 @@ type RawUnidenChunk struct {
 }
 
 type UnidenChunk struct {
-	Favorite   FavoriteInfo
-	System     SystemInfo
-	Department DepartmentInfo
-	Channel    ChannelInfo
-	Site       SiteInfo
-	Metadata   Metadata
+	Favorite   FavoriteInfo   `csv:"-"`
+	System     SystemInfo     `csv:"-"`
+	Department DepartmentInfo `csv:"-"`
+	Channel    ChannelInfo    `csv:"-"`
+	Site       SiteInfo       `csv:"-"`
+	Metadata   Metadata       `csv:"-"`
 }

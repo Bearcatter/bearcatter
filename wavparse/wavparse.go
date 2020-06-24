@@ -94,7 +94,7 @@ func DecodeRecording(path string) (*Recording, error) {
 		return nil, fmt.Errorf("error getting file duration: %w", durationErr)
 	}
 
-	rec.Duration = duration
+	rec.Duration = StopwatchDuration(duration)
 
 	if rec.Public.TGIDFreq == "" && rec.Private.Metadata.TGID != "" {
 		rec.Public.TGIDFreq = rec.Private.Metadata.TGID
@@ -173,7 +173,7 @@ func decodeLISTChunk(ch *riff.Chunk) (*ListChunk, error) {
 			case [4]byte{'I', 'K', 'E', 'Y'}: // Unknown
 				recListChunk.Unknown = nullTermStr(scratch)
 			case [4]byte{'I', 'C', 'R', 'D'}: // Timestamp
-				ts, tsErr := time.Parse(timestampFormat, nullTermStr(scratch))
+				ts, tsErr := time.ParseInLocation(timestampFormat, nullTermStr(scratch), time.Local)
 				if tsErr != nil {
 					return nil, fmt.Errorf("error when parsing timestamp from riff list chunk: %w", tsErr)
 				}

@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"encoding/xml"
@@ -8,6 +8,86 @@ import (
 	"time"
 
 	"github.com/Bearcatter/bearcatter/wavparse"
+)
+
+type SDSKeyType string
+type SDSKeyModeType string
+type GltXmlType int
+
+const (
+	DefaultGoProcMultiplier = 5
+	DefaultGoProcDelay      = 30 // milliseconds
+
+	LF = 1 << 0
+	NL = 1 << 1
+
+	VALID_KEY_CMD_LENGTH = 10
+	KEY_PUSH_CMD         = "PUSH"
+	KEY_HOLD_CMD         = "HOLD"
+
+	KEY_MENU      SDSKeyType = "M"
+	KEY_F         SDSKeyType = "F"
+	KEY_1         SDSKeyType = "1"
+	KEY_2         SDSKeyType = "2"
+	KEY_3         SDSKeyType = "3"
+	KEY_4         SDSKeyType = "4"
+	KEY_5         SDSKeyType = "5"
+	KEY_6         SDSKeyType = "6"
+	KEY_7         SDSKeyType = "7"
+	KEY_8         SDSKeyType = "8"
+	KEY_9         SDSKeyType = "9"
+	KEY_0         SDSKeyType = "0"
+	KEY_DOT       SDSKeyType = "."
+	KEY_ENTER     SDSKeyType = "E"
+	KEY_ROT_RIGHT SDSKeyType = ">"
+	KEY_ROT_LEFT  SDSKeyType = "<"
+	KEY_ROT_PUSH  SDSKeyType = "^"
+	KEY_VOL_PUSH  SDSKeyType = "V"
+	KEY_SQL_PUSH  SDSKeyType = "Q"
+	KEY_REPLAY    SDSKeyType = "Y"
+	KEY_SYSTEM    SDSKeyType = "A"
+	KEY_DEPT      SDSKeyType = "B"
+	KEY_CHANNEL   SDSKeyType = "C"
+	KEY_ZIP       SDSKeyType = "Z"
+	KEY_SERV      SDSKeyType = "T"
+	KEY_RANGE     SDSKeyType = "R"
+
+	KEY_MODE_PRESS   SDSKeyModeType = "P" // Press (One Push)
+	KEY_MODE_LONG    SDSKeyModeType = "L" // Long Press (Press and Hold a few seconds)
+	KEY_MODE_HOLD    SDSKeyModeType = "H" // Hold (Press and Hold until Release receive)
+	KEY_MODE_RELEASE SDSKeyModeType = "R" // Release (Cancel Hold state
+
+	GltXmlUnknown GltXmlType = -1
+	GltXmlFL      GltXmlType = iota
+	GltXmlSYS
+	GltXmlDEPT
+	GltXmlSITE
+	GltXmlCFREQ
+	GltXmlTGID
+	GltXmlSFREQ
+	GltXmlAFREQ
+	GltXmlATGID
+	GltXmlFTO
+	GltXmlCSBANK
+	GltXmlUREC
+	GltXmlIREC_FILE
+	GltXmlUREC_FOLDER
+	GltXmlUREC_FILE
+	GltXmlTRN_DISCOV
+	GltXmlCNV_DISCOV
+
+	AstModeCurrentActivity ASTModeType = "CURRENT_ACTIVITY"
+	AstModeLCNMonitor      ASTModeType = "LCN_MONITOR"
+	AstActivityLog         ASTModeType = "ACTIVITY_LOG"
+	AstLCNFinder           ASTModeType = "LCN_FINDER"
+
+	AprModePause APRModeType = "PAUSE"
+	AprModeRESME APRModeType = "RESUME"
+)
+
+var (
+	// validKeys = loadValidKeys()
+	TERMINATE = "quit\r"
 )
 
 type ScannerInfo struct {
@@ -471,7 +551,7 @@ func (d *DateTimeInfo) String() string {
 }
 
 func NewDateTimeInfo(raw string) *DateTimeInfo {
-	parsedTime, _ := time.Parse(DateTimeFormat, raw[2:len(raw)-2])
+	parsedTime, _ := time.ParseInLocation(DateTimeFormat, raw[2:len(raw)-2], time.Local)
 	dst, _ := strconv.ParseBool(raw[0:1])
 	rtc, _ := strconv.ParseBool(raw[len(raw)-1:])
 	return &DateTimeInfo{
@@ -590,21 +670,19 @@ func (k *KeyPress) String() string {
 }
 
 type AudioFeedFile struct {
-	Name      string
-	Size      int64
-	Timestamp *time.Time
-	Data      []byte
-	Finished  bool
-	Metadata  *wavparse.Recording
+	Name           string
+	Size           int64
+	ExpectedBlocks int64
+	Timestamp      *time.Time
+	Data           []byte
+	Finished       bool
+	Metadata       *wavparse.Recording
 }
 
 func (a *AudioFeedFile) ParseMetadata(file string) error {
-	metadata, metadataErr := wavparse.DecodeRecording(file)
-	if metadataErr != nil {
-		return metadataErr
-	}
-	a.Metadata = metadata
-	return nil
+	var metadataErr error
+	a.Metadata, metadataErr = wavparse.DecodeRecording(file)
+	return metadataErr
 }
 
 var ErrNoFile = fmt.Errorf("no file name was set, probably waiting for info")
@@ -624,8 +702,10 @@ func NewAudioFeedFile(pieces []string) (*AudioFeedFile, error) {
 
 	file.Size = size
 
+	file.ExpectedBlocks = (size / 4096) * 2
+
 	// 06/20/2020 20:31:24
-	ts, tsErr := time.Parse("01/02/2006 15:04:05", pieces[2])
+	ts, tsErr := time.ParseInLocation("01/02/2006 15:04:05", pieces[2], time.Local)
 	if tsErr != nil {
 		return nil, tsErr
 	}

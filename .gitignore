@@ -5,7 +5,7 @@
 *.so
 *.dylib
 
-server
+bearcatter
 
 # Test binary, built with `go test -c`
 *.test
@@ -19,3 +19,6 @@ server
 .DS_Store
 
 audio/*
+
+*.json
+*.csv

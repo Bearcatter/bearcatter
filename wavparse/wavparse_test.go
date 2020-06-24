@@ -29,7 +29,7 @@ func (date *WavPlayerTime) MarshalCSV() (string, error) {
 
 // Convert the CSV string as internal date.
 func (date *WavPlayerTime) UnmarshalCSV(csv string) (err error) {
-	date.Time, err = time.Parse(wavPlayerTimeFormat, csv)
+	date.Time, err = time.ParseInLocation(wavPlayerTimeFormat, csv, time.Local)
 	return err
 }
 
@@ -72,7 +72,7 @@ type WavPlayerEntry struct {
 }
 
 func TestDecodeRecording(t *testing.T) {
-	testCaseFile, openErr := os.OpenFile("fixtures.csv", os.O_RDWR|os.O_CREATE, os.ModePerm)
+	testCaseFile, openErr := os.OpenFile("fixtures.csv", os.O_RDONLY, os.ModePerm)
 	if openErr != nil {
 		t.Fatalf("error when opening csv containing testcases: %v", openErr)
 	}

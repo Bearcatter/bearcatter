@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"net/http"
@@ -12,7 +12,6 @@ import (
 )
 
 func startWSServer(host string, port int, ctrl *ScannerCtrl) (*http.Server, error) {
-
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		conn, _, _, err := ws.UpgradeHTTP(r, w)
 		if err != nil {
@@ -30,7 +29,7 @@ func startWSServer(host string, port int, ctrl *ScannerCtrl) (*http.Server, erro
 			}
 		}()
 
-		if ctrl.locker.state == true {
+		if ctrl.locker.state {
 			log.Infoln("Scanner is already is use by", ctrl.locker.name)
 			if writeErr := wsutil.WriteServerMessage(conn, ws.OpBinary, []byte("Locked by "+ctrl.locker.name)); writeErr != nil {
 				// handle error
@@ -54,10 +53,9 @@ func startWSServer(host string, port int, ctrl *ScannerCtrl) (*http.Server, erro
 
 		// WS Reader routine
 		go func() {
-
 			for {
 				select {
-				case _ = <-quitWriter:
+				case <-quitWriter:
 					return
 				default:
 					time.Sleep(time.Millisecond * 50)
@@ -66,7 +64,7 @@ func startWSServer(host string, port int, ctrl *ScannerCtrl) (*http.Server, erro
 
 				if readErr != nil {
 					// handle error
-					log.Errorln("Failed to read from WS, Terminating Client Conection", readErr)
+					log.Errorln("Failed to read from WS, Terminating Client Connection", readErr)
 					done <- true
 					quitReader <- true
 					return
@@ -79,7 +77,7 @@ func startWSServer(host string, port int, ctrl *ScannerCtrl) (*http.Server, erro
 
 				strMsg := string(crlfStrip(msgFromHost, LF))
 				if strMsg == TERMINATE {
-					log.Infoln("Received Client QUIT Command: Terminating Client Conection")
+					log.Infoln("Received Client QUIT Command: Terminating Client Connection")
 					done <- true
 					quitReader <- true
 					return
@@ -105,9 +103,8 @@ func startWSServer(host string, port int, ctrl *ScannerCtrl) (*http.Server, erro
 		// WS Writer routine
 		go func() {
 			for {
-
 				select {
-				case _ = <-quitReader:
+				case <-quitReader:
 					return
 				default:
 					time.Sleep(time.Millisecond * 50)
@@ -149,7 +146,6 @@ func startWSServer(host string, port int, ctrl *ScannerCtrl) (*http.Server, erro
 			}
 		}
 		ctrl.mode.WSClientConnected = false
-
 	})
 
 	s := &http.Server{
@@ -159,7 +155,11 @@ func startWSServer(host string, port int, ctrl *ScannerCtrl) (*http.Server, erro
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
-	go s.ListenAndServe()
+	go func() {
+		if listenErr := s.ListenAndServe(); listenErr != nil {
+			log.Fatalln("Error when listening for WebSocket Server", listenErr)
+		}
+	}()
 	log.Infoln("Started WebSocket Server at", s.Addr)
 	return s, nil
 }
