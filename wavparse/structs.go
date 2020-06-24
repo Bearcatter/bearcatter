@@ -41,8 +41,8 @@ func (clock *StopwatchDuration) UnmarshalCSV(csv string) error {
 type Recording struct {
 	File     string            `json:",omitempty" validate:"omitempty,printascii"`
 	Duration StopwatchDuration `json:",omitempty"`
-	Public   *ListChunk        `json:",omitempty"`
-	Private  *UnidenChunk      `json:",omitempty"`
+	Public   *ListChunk        `csv:"-" json:",omitempty"`
+	Private  *UnidenChunk      `csv:"-" json:",omitempty"`
 }
 type ListChunk struct {
 	System           string     `csv:"Public_System" json:",omitempty" validate:"omitempty,printascii"`           // IART
@@ -655,10 +655,10 @@ type RawUnidenChunk struct {
 }
 
 type UnidenChunk struct {
-	Favorite   FavoriteInfo
-	System     SystemInfo
-	Department DepartmentInfo
-	Channel    ChannelInfo
-	Site       SiteInfo
-	Metadata   Metadata
+	Favorite   FavoriteInfo   `csv:"-"`
+	System     SystemInfo     `csv:"-"`
+	Department DepartmentInfo `csv:"-"`
+	Channel    ChannelInfo    `csv:"-"`
+	Site       SiteInfo       `csv:"-"`
+	Metadata   Metadata       `csv:"-"`
 }
