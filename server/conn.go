@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"bufio"
@@ -26,12 +26,7 @@ type ScannerConn struct {
 	usbReader *bufio.Scanner
 }
 
-func NewUDPConn(ip net.IP, port int) (*ScannerConn, error) {
-	addr := &net.UDPAddr{
-		IP:   ip,
-		Port: port,
-	}
-
+func NewUDPConn(addr *net.UDPAddr) (*ScannerConn, error) {
 	return &ScannerConn{
 		Type:       ConnTypeNetwork,
 		udpAddress: addr,
