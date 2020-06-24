@@ -11,6 +11,7 @@ import (
 )
 
 var cfgFile string
+var loggerLvl string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -40,26 +41,7 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.bearcatter.yaml)")
 
-	loggerLvl := rootCmd.PersistentFlags().String("log.level", "InfoLevel", "The level of log to show [default = InfoLevel]. Available options are (PanicLevel, FatalLevel, ErrorLevel, WarnLevel, InfoLevel, DebugLevel, TraceLevel)")
-
-	switch *loggerLvl {
-	case "TraceLevel":
-		log.SetLevel(log.TraceLevel)
-	case "DebugLevel":
-		log.SetLevel(log.DebugLevel)
-	case "InfoLevel":
-		log.SetLevel(log.InfoLevel)
-	case "WarnLevel":
-		log.SetLevel(log.WarnLevel)
-	case "ErrorLevel":
-		log.SetLevel(log.ErrorLevel)
-	case "FatalLevel":
-		log.SetLevel(log.FatalLevel)
-	case "PanicLevel":
-		log.SetLevel(log.PanicLevel)
-	default:
-		log.Fatalf("Logrus logger level %s doesn't exist", *loggerLvl)
-	}
+	rootCmd.PersistentFlags().StringVar(&loggerLvl, "log.level", "InfoLevel", "The level of log to show [default = InfoLevel]. Available options are (PanicLevel, FatalLevel, ErrorLevel, WarnLevel, InfoLevel, DebugLevel, TraceLevel)")
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -85,5 +67,24 @@ func initConfig() {
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	}
+
+	switch loggerLvl {
+	case "TraceLevel":
+		log.SetLevel(log.TraceLevel)
+	case "DebugLevel":
+		log.SetLevel(log.DebugLevel)
+	case "InfoLevel":
+		log.SetLevel(log.InfoLevel)
+	case "WarnLevel":
+		log.SetLevel(log.WarnLevel)
+	case "ErrorLevel":
+		log.SetLevel(log.ErrorLevel)
+	case "FatalLevel":
+		log.SetLevel(log.FatalLevel)
+	case "PanicLevel":
+		log.SetLevel(log.PanicLevel)
+	default:
+		log.Fatalf("Logrus logger level %s doesn't exist\n", loggerLvl)
 	}
 }
