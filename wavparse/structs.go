@@ -222,7 +222,7 @@ type SystemInfo struct {
 	Avoid                    bool   `csv:"System_Avoid"`
 	Blank                    string `csv:"System_Blank" json:",omitempty" validate:"omitempty,printascii"`
 	Type                     string `csv:"System_Type" json:",omitempty" validate:"omitempty,printascii"`
-	IDSearch                 bool   `csv:"System_IDSearch"`
+	IDSearch                 string `csv:"System_IDSearch"`
 	EmergencyAlertType       string `csv:"System_EmergencyAlertType" json:",omitempty" validate:"omitempty,printascii"`
 	AlertVolume              string `csv:"System_AlertVolume" json:",omitempty" validate:"omitempty,printascii"`
 	MotorolaStatusBit        string `csv:"System_MotorolaStatusBit" json:",omitempty" validate:"omitempty,printascii"`
@@ -262,11 +262,7 @@ func (s *SystemInfo) UnmarshalBinary(data []byte) error {
 		s.Type = split[3]
 	}
 	if len(split) >= 5 && split[4] != "" {
-		var parseErr error
-		s.IDSearch, parseErr = parseBool(split[4])
-		if parseErr != nil {
-			return fmt.Errorf("error when parsing system id search toggle to bool: %w", parseErr)
-		}
+		s.IDSearch = split[4]
 	}
 	if len(split) >= 6 && split[5] != "" {
 		s.EmergencyAlertType = split[5]
@@ -481,7 +477,7 @@ type ChannelInfo struct {
 	Mode            string      `csv:"Channel_Mode" json:",omitempty" validate:"omitempty,printascii"`
 	ToneCode        string      `csv:"Channel_ToneCode" json:",omitempty" validate:"omitempty,printascii"`
 	ServiceType     ServiceType `csv:"Channel_ServiceType"`
-	Attenuator      int         `csv:"Channel_Attenuator"` // Conventional systems only
+	Attenuator      string      `csv:"Channel_Attenuator"` // Conventional systems only
 	DelayValue      string      `csv:"Channel_DelayValue" json:",omitempty" validate:"omitempty,printascii"`
 	VolumeOffset    string      `csv:"Channel_VolumeOffset" json:",omitempty" validate:"omitempty,printascii"`
 	AlertToneType   string      `csv:"Channel_AlertToneType" json:",omitempty" validate:"omitempty,printascii"`
@@ -531,11 +527,7 @@ func (c *ChannelInfo) UnmarshalBinary(data []byte) error {
 	if len(split) > 15 { // Conventional systems have one extra channel field, Attenuator
 		conventionalOffset = 1
 		if len(split) >= 7 && split[6] != "" {
-			parsed, parseErr := strconv.ParseInt(split[6], 10, 32)
-			if parseErr != nil {
-				return fmt.Errorf("error when parsing channel attenuator to int: %w", parseErr)
-			}
-			c.Attenuator = int(parsed)
+			c.Attenuator = split[6]
 		}
 	}
 
