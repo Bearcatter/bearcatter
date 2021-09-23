@@ -9,7 +9,7 @@ use `go build` to make a binary
 Start the server with `--help` to see the options
 
 ```
-./server --help
+./bearcatter --help
 ```
 
 ### License
